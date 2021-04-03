@@ -10,7 +10,7 @@ import defaultSelectorFactory from './selectorFactory'
   selectorFactory, which has the signature:
 
     (dispatch, options) => (nextState, nextOwnProps) => nextFinalProps
-  
+
   connect passes its args to connectAdvanced as options, which will in turn pass them to
   selectorFactory each time a Connect component instance is instantiated or hot reloaded.
 
@@ -41,8 +41,8 @@ function strictEqual(a, b) {
   return a === b
 }
 
-// createConnect with default args builds the 'official' connect behavior. Calling it with
-// different options opens up some testing and extensibility scenarios
+// 创建 connect 函数, 这个函数会在这个文件里执行
+// 这样做的原因是 可以让某些属性可配置化, 方便自定义和测试
 export function createConnect({
   connectHOC = connectAdvanced,
   mapStateToPropsFactories = defaultMapStateToPropsFactories,
@@ -50,6 +50,7 @@ export function createConnect({
   mergePropsFactories = defaultMergePropsFactories,
   selectorFactory = defaultSelectorFactory,
 } = {}) {
+  // 返回真正的 connect 函数
   return function connect(
     mapStateToProps,
     mapDispatchToProps,
@@ -63,11 +64,20 @@ export function createConnect({
       ...extraOptions
     } = {}
   ) {
+
+    // 判断 mapStateToProps 是否符合已经定义的规则
+    // mapStateToPropsFactories 可以想象成你对
+    // mapStateToProps 做了一些判断, 只要有一个判断符合了
+    // 就可以成功返回值
+    // mapStateToPropsFactories 的规则会在 react-redux/src/connect/mapStateToProps.js 里讲解
     const initMapStateToProps = match(
       mapStateToProps,
       mapStateToPropsFactories,
       'mapStateToProps'
     )
+
+    // 同上 但是 他的默认规则是 defaultMapDispatchToPropsFactories
+    // 在 react-redux/src/connect/mapDispatchToProps.js 此文件中
     const initMapDispatchToProps = match(
       mapDispatchToProps,
       mapDispatchToPropsFactories,

@@ -15,9 +15,9 @@ react-redux 依赖的库:
 }
 ```
 
-这里我直接把 react-redux 的源码下载了下来,所以这些依赖就必须手动安装了  
+这里我直接把 react-redux 的源码下载了下来,所以这些依赖就必须手动安装了
 
-注意: **关于 hooks 的解析会放到下一文** 
+注意: **关于 hooks 的解析会放到下一文**
 
 ### redux
 
@@ -25,8 +25,7 @@ redux 是一个库,但更是一种思想, 而 react-redux 就是一座桥了, �
 
 ## 分模块
 
-
-我们将 react-redux 分成 3 个模块
+我们将 redux 使用的流程分成 3 个模块
 
 1. store 的创建
 
@@ -34,12 +33,36 @@ redux 是一个库,但更是一种思想, 而 react-redux 就是一座桥了, �
 
 3. connect 在想要的组件中使用
 
-
 ## store
 
 关于 store 的创建
 
+store 使用的主要就是 redux 的 api, 不管 `combineReducers` 还是 `createStore`
+
+关于 redux 的 store  提供了以下 API:
+
+```
+export interface Store<S = any, A extends Action = AnyAction> {
+   
+   // dispatch 的动作
+  dispatch: Dispatch<A>
+    
+  // 返回应用程序的当前状态树。
+  getState(): S
+
+   // 添加更改侦听器。每当分派动作时，都会调用它，并且状态树的某些部分可能已更改。然后，您可以调用`getState（）`来读取回调中的当前状态树。
+  subscribe(listener: () => void): Unsubscribe
+
+   // 替换 reducer
+  replaceReducer(nextReducer: Reducer<S, A>): void
+}
+
+```
+
+## provider
+
 可以查看文件: `react-redux/src/components/Provider.js`
+
 ```
 // 省略文件的引入
 
@@ -83,6 +106,7 @@ function Provider({ store, context, children }) {
   // context, 如果外部提供了 则使用外部的 
   const Context = context || ReactReduxContext
 
+  // 就是 context 的 provider
   return <Context.Provider value={contextValue}>{children}</Context.Provider>
 }
 
@@ -93,9 +117,16 @@ export default Provider
 ```
 
 
+## connect
+到这里就是真正链接的地方了, 将 redux 的 store 与任意的组件连接
+
+首先查看 connect 的入口文件 `src/connect/connect` :  
+
+
 
 
 ## 其他
+
 ## 入口文件 src/index.js
 
 ```
@@ -107,8 +138,7 @@ export {
 }
 ```
 
-基本上都是把 export 的方法引入, 统一再这个文件导出, 但是其中也执行了一个函数: `setBatch(batch)` 
-
+基本上都是把 export 的方法引入, 统一再这个文件导出, 但是其中也执行了一个函数: `setBatch(batch)`
 
 #### setBatch
 
@@ -129,6 +159,5 @@ export const setBatch = (newBatch) => (batch = newBatch)
 export const getBatch = () => batch
 ```
 
-简单的来说就是, 此文件中存储了一个变量 batch, 对外输出了 2 个函数,
-设置此变量和获取此变量
+简单的来说就是, 此文件中存储了一个变量 batch, 对外输出了 2 个函数, 设置此变量和获取此变量
 
