@@ -97,6 +97,7 @@ export function pureFinalPropsSelectorFactory(
 // props have not changed. If false, the selector will always return a new
 // object and shouldComponentUpdate will always return true.
 
+// 默认的选择器工厂
 export default function finalPropsSelectorFactory(
   dispatch,
   { initMapStateToProps, initMapDispatchToProps, initMergeProps, ...options }

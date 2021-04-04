@@ -83,19 +83,22 @@ export function createConnect({
       mapDispatchToPropsFactories,
       'mapDispatchToProps'
     )
+
+    // 同上
     const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
 
+    // 包裹组件的高阶函数 connect(mapStateToProps)(Component)
     return connectHOC(selectorFactory, {
-      // used in error messages
+      // 方便 error messages 打印
       methodName: 'connect',
 
-      // used to compute Connect's displayName from the wrapped component's displayName.
+      // 用于从包装的组件的displayName计算Connect的displayName。
       getDisplayName: (name) => `Connect(${name})`,
 
-      // if mapStateToProps is falsy, the Connect component doesn't subscribe to store state changes
+      // 如果mapStateToProps 为 falsy，则Connect组件不订阅存储状态更改
       shouldHandleStateChanges: Boolean(mapStateToProps),
 
-      // passed through to selectorFactory
+      //  传递给 selectorFactory 的参数
       initMapStateToProps,
       initMapDispatchToProps,
       initMergeProps,
