@@ -90,18 +90,19 @@ export function pureFinalPropsSelectorFactory(
   }
 }
 
-// TODO: Add more comments
 
-// If pure is true, the selector returned by selectorFactory will memoize its results,
-// allowing connectAdvanced's shouldComponentUpdate to return false if final
-// props have not changed. If false, the selector will always return a new
-// object and shouldComponentUpdate will always return true.
+// 如果pure为true，则selectorFactory返回的选择器将记住其结果，
+// 如果未更改结果，则connectAdvanced的shouldComponentUpdate可以返回false。
+// 如果为false，则选择器将始终返回新对象，而shouldComponentUpdate将始终返回true。
 
 // 默认的选择器工厂
 export default function finalPropsSelectorFactory(
   dispatch,
   { initMapStateToProps, initMapDispatchToProps, initMergeProps, ...options }
 ) {
+
+  // initMapStateToProps 可在 connect 中查看 就是通过 match 获取的结果
+  //
   const mapStateToProps = initMapStateToProps(dispatch, options)
   const mapDispatchToProps = initMapDispatchToProps(dispatch, options)
   const mergeProps = initMergeProps(dispatch, options)

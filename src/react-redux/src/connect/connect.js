@@ -70,6 +70,9 @@ export function createConnect({
     // mapStateToProps 做了一些判断, 只要有一个判断符合了
     // 就可以成功返回值
     // mapStateToPropsFactories 的规则会在 react-redux/src/connect/mapStateToProps.js 里讲解
+    // 默认的 defaultMapStateToPropsFactories 有两个规则
+    // 1. 如果是函数, 会使用 wrapMapToPropsFunc 包裹, 并且直接return结果
+    // 2. 如果没有传值, 则会使用 wrapMapToPropsConstant 包裹
     const initMapStateToProps = match(
       mapStateToProps,
       mapStateToPropsFactories,

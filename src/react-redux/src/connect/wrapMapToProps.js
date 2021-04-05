@@ -1,5 +1,10 @@
 import verifyPlainObject from '../utils/verifyPlainObject'
 
+
+// 没有传递任何参数的时候
+// getConstant 是一个函数 返回空对象 {}
+// 所以这里的操作也就是返回空的对象
+// 这里的 initConstantSelector  和 constantSelector.dependsOnOwnProps 是为了和另一个包裹行为保持一致
 export function wrapMapToPropsConstant(getConstant) {
   return function initConstantSelector(dispatch, options) {
     const constant = getConstant(dispatch, options)
@@ -38,6 +43,14 @@ export function getDependsOnOwnProps(mapToProps) {
 //  * On first call, verifies the first result is a plain object, in order to warn
 //    the developer that their mapToProps function is not returning a valid result.
 //
+
+// 在MapStateToProps是一个函数时, 此函数将mapToProps包装在一个代理函数中，该代理函数执行以下操作
+//
+// 检测被调用的mapToProps函数是否依赖于props，selectorFactory使用它来决定是否应重新调用props更改。
+//
+// 第一次调用时，如果返回另一个函数，则处理mapToProps，并将该新函数视为后续调用的真正mapToProps。
+//
+// 第一次调用时，请验证第一个结果是一个普通对象，以警告开发人员其mapToProps函数未返回有效结果。
 export function wrapMapToPropsFunc(mapToProps, methodName) {
   return function initProxySelector(dispatch, { displayName }) {
     const proxy = function mapToPropsProxy(stateOrDispatch, ownProps) {
