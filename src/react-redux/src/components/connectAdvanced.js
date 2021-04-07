@@ -250,32 +250,33 @@ export default function connectAdvanced(
 
         const {pure} = connectOptions // 第一步传递过来的参数  默认为 true
 
-        // 创建子选择器
+        // 创建子选择器的函数 声明
         function createChildSelector(store) {
             return selectorFactory(store.dispatch, selectorFactoryOptions)
         }
 
-        // If we aren't running in "pure" mode, we don't want to memoize values.
-        // To avoid conditionally calling hooks, we fall back to a tiny wrapper
-        // that just executes the given callback immediately.
+
+        // 如果 pure 为 false, 则直接指向回调 而不是 useMemo
         const usePureOnlyMemo = pure ? useMemo : (callback) => callback()
 
+        // 当前整个函数的主体部分 接受 props 返回 JSX 并且会用 Context 包裹
         function ConnectFunction(props) {
             const [
                 propsContext,
                 reactReduxForwardedRef,
                 wrapperProps,
             ] = useMemo(() => {
-                // Distinguish between actual "data" props that were passed to the wrapper component,
-                // and values needed to control behavior (forwarded refs, alternate context instances).
-                // To maintain the wrapperProps object reference, memoize this destructuring.
+                // 区分传递给包装器组件的实际“数据”属性和控制行为所需的值（转发的引用，备用上下文实例）。
+                // 要维护wrapperProps对象引用，缓存此解构。
+                // 此处使用的是官方注释
                 const {reactReduxForwardedRef, ...wrapperProps} = props
                 return [props.context, reactReduxForwardedRef, wrapperProps]
             }, [props])
 
             const ContextToUse = useMemo(() => {
-                // Users may optionally pass in a custom context instance to use instead of our ReactReduxContext.
-                // Memoize the check that determines which context instance we should use.
+               // 用户可以选择传入自定义上下文实例来代替我们的ReactReduxContext使用。
+                // 记住确定应该使用哪个上下文实例的检查。
+                // 此处使用的是官方注释
                 return propsContext &&
                 propsContext.Consumer &&
                 isContextConsumer(<propsContext.Consumer/>)
@@ -283,19 +284,22 @@ export default function connectAdvanced(
                     : Context
             }, [propsContext, Context])
 
-            // Retrieve the store and ancestor subscription via context, if available
+            // useContext 不用多说
             const contextValue = useContext(ContextToUse)
 
-            // The store _must_ exist as either a prop or in context.
-            // We'll check to see if it _looks_ like a Redux store first.
-            // This allows us to pass through a `store` prop that is just a plain value.
+            // store 必须存在于 props 或 context
+            // 我们将首先检查它是否看起来像 Redux store。
+            // 这使我们可以通过一个 “store” props，该 props 只是一个简单的值。
             const didStoreComeFromProps =
                 Boolean(props.store) &&
                 Boolean(props.store.getState) &&
                 Boolean(props.store.dispatch)
+
+            // 确认 store 是否来自于本地 context
             const didStoreComeFromContext =
                 Boolean(contextValue) && Boolean(contextValue.store)
 
+            // 如果都不是 则报错
             if (
                 process.env.NODE_ENV !== 'production' &&
                 !didStoreComeFromProps &&
@@ -309,29 +313,31 @@ export default function connectAdvanced(
                 )
             }
 
-            // Based on the previous check, one of these must be true
+            // 获取 store  赋值
             const store = didStoreComeFromProps ? props.store : contextValue.store
 
             const childPropsSelector = useMemo(() => {
-                // The child props selector needs the store reference as an input.
-                // Re-create this selector whenever the store changes.
+                // 子道具选择器需要store参考作为输入。每当store更改时，则重新创建此选择器。
                 return createChildSelector(store)
             }, [store])
 
             const [subscription, notifyNestedSubs] = useMemo(() => {
-                if (!shouldHandleStateChanges) return NO_SUBSCRIPTION_ARRAY
+                // 确定这个 hoc 是否会监听 store 的改变 默认为 true
+                if (!shouldHandleStateChanges) return NO_SUBSCRIPTION_ARRAY // [null, null]
 
-                // This Subscription's source should match where store came from: props vs. context. A component
-                // connected to the store via props shouldn't use subscription from context, or vice versa.
+                // new 一个新的 Subscription
+                // 此订阅的来源应与存储来自何处相匹配：store vs context。
+                // 通过 props 连接到 store 的组件不应使用 context 订阅，反之亦然。
+                // 文件来源 react-redux/src/utils/Subscription.js
                 const subscription = new Subscription(
                     store,
                     didStoreComeFromProps ? null : contextValue.subscription
                 )
 
-                // `notifyNestedSubs` is duplicated to handle the case where the component is unmounted in
-                // the middle of the notification loop, where `subscription` will then be null. This can
-                // probably be avoided if Subscription's listeners logic is changed to not call listeners
-                // that have been unsubscribed in the  middle of the notification loop.
+                // `notifyNestedSubs`是重复的，以处理组件在通知循环中间被取消订阅的情况，
+                // 此时`subscription`将为空。 如果修改Subscription的监听器逻辑，
+                // 不在通知循环中间调用已取消订阅的监听器，就可以避免这种情况。
+                // 此处使用的是官方注释
                 const notifyNestedSubs = subscription.notifyNestedSubs.bind(
                     subscription
                 )
@@ -459,12 +465,13 @@ export default function connectAdvanced(
             return renderedChild
         }
 
-        // If we're in "pure" mode, ensure our wrapper component only re-renders when incoming props have changed.
+        // 通过 pure 来确定是否要加 memo
         const Connect = pure ? React.memo(ConnectFunction) : ConnectFunction
 
         Connect.WrappedComponent = WrappedComponent
         Connect.displayName = displayName
 
+        // 关于 forwardRef 的补充
         if (forwardRef) {
             const forwarded = React.forwardRef(function forwardConnectRef(
                 props,

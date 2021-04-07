@@ -6,6 +6,7 @@ import { getBatch } from './batch'
 
 const nullListeners = { notify() {} }
 
+// 创建监听器集合
 function createListenerCollection() {
   const batch = getBatch()
   let first = null
@@ -71,6 +72,11 @@ function createListenerCollection() {
   }
 }
 
+// 一个订阅类
+// new 时接受一个 store 和 父订阅实例
+// 需要设置 onStateChange , 若 onStateChange 发生变化 则执行
+
+// 添加监听时 若有父订阅实例 则在父实例中添加监听 监听子回调
 export default class Subscription {
   constructor(store, parentSub) {
     this.store = store
