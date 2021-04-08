@@ -345,37 +345,36 @@ export default function connectAdvanced(
                 return [subscription, notifyNestedSubs]
             }, [store, didStoreComeFromProps, contextValue])
 
-            // Determine what {store, subscription} value should be put into nested context, if necessary,
-            // and memoize that value to avoid unnecessary context updates.
+            // 如果需要的话，确定应该把什么{store，subscription}值放到嵌套的context中
+            // ，并将该值备忘，以避免不必要的上下文更新。
             const overriddenContextValue = useMemo(() => {
                 if (didStoreComeFromProps) {
-                    // This component is directly subscribed to a store from props.
-                    // We don't want descendants reading from this store - pass down whatever
-                    // the existing context value is from the nearest connected ancestor.
+                    // 这个组件是直接从props订阅一个存储.
+                    // 我们不希望子孙从这个存储中读取--无论现有的上下文值是来自最近的连接祖先的什么，
+                    // 都会传下来。
                     return contextValue
                 }
 
-                // Otherwise, put this component's subscription instance into context, so that
-                // connected descendants won't update until after this component is done
+                // 否则，把这个组件的订阅实例放到上下文中，这样连接的子孙就不会更新，直到这个组件完成之后。
                 return {
                     ...contextValue,
                     subscription,
                 }
             }, [didStoreComeFromProps, contextValue, subscription])
 
-            // We need to force this wrapper component to re-render whenever a Redux store update
-            // causes a change to the calculated child component props (or we caught an error in mapState)
+            // 每当 Redux store 更新导致计算出的子组件 props 发生变化时，我们需要强制这个包装组件重新渲染（或者我们在mapState中发现了一个错误）。
             const [
                 [previousStateUpdateResult],
                 forceComponentUpdateDispatch,
             ] = useReducer(storeStateUpdatesReducer, EMPTY_ARRAY, initStateUpdates)
 
-            // Propagate any mapState/mapDispatch errors upwards
+            // 抛出任何 mapState/mapDispatch 错误。
             if (previousStateUpdateResult && previousStateUpdateResult.error) {
                 throw previousStateUpdateResult.error
             }
 
-            // Set up refs to coordinate values between the subscription effect and the render logic
+            // 设置 ref，以协调订阅效果和渲染逻辑之间的数值。
+            // 参考 通过 ref 可以获取,存储值
             const lastChildProps = useRef()
             const lastWrapperProps = useRef(wrapperProps)
             const childPropsFromStoreUpdate = useRef()
