@@ -381,12 +381,12 @@ export default function connectAdvanced(
             const renderIsScheduled = useRef(false)
 
             const actualChildProps = usePureOnlyMemo(() => {
-                // Tricky logic here:
-                // - This render may have been triggered by a Redux store update that produced new child props
-                // - However, we may have gotten new wrapper props after that
-                // If we have new child props, and the same wrapper props, we know we should use the new child props as-is.
-                // But, if we have new wrapper props, those might change the child props, so we have to recalculate things.
-                // So, we'll use the child props from store update only if the wrapper props are the same as last time.
+                // 这里的逻辑很复杂:
+                // 这个渲染可能是由 Redux store 更新所触发，产生了新的子 props。
+                // 不过，在那之后，我们可能会得到新的包装 props。
+                // 如果我们有新的子 props ，和相同的包装 props , 我们知道我们应该按原样使用新的子 props .
+                // 但是，如果我们有新的包装props，这些可能会改变子 props ，所以我们必须重新计算这些.
+                // 所以，只有当包装 props 和上次一样时，我们才会使用 store 更新的子 props。
                 if (
                     childPropsFromStoreUpdate.current &&
                     wrapperProps === lastWrapperProps.current
@@ -394,16 +394,15 @@ export default function connectAdvanced(
                     return childPropsFromStoreUpdate.current
                 }
 
-                // TODO We're reading the store directly in render() here. Bad idea?
-                // This will likely cause Bad Things (TM) to happen in Concurrent Mode.
-                // Note that we do this because on renders _not_ caused by store updates, we need the latest store state
-                // to determine what the child props should be.
+                // 这很可能会导致在并发模式下发生坏事（TM）。
+                // 请注意，我们之所以这样做是因为在由存储更新引起的渲染中，
+                // 我们需要最新的存储状态来确定子 props 应该是什么。
                 return childPropsSelector(store.getState(), wrapperProps)
             }, [store, previousStateUpdateResult, wrapperProps])
 
-            // We need this to execute synchronously every time we re-render. However, React warns
-            // about useLayoutEffect in SSR, so we try to detect environment and fall back to
-            // just useEffect instead to avoid the warning, since neither will run anyway.
+            // 我们需要在每次重新渲染时同步执行。
+            // 然而，React会对SSR中的useLayoutEffect发出警告, 避免警告
+            // 相当于在 useLayoutEffect 中执行, 包装了一下
             useIsomorphicLayoutEffectWithArgs(captureWrapperProps, [
                 lastWrapperProps,
                 lastChildProps,
@@ -414,7 +413,7 @@ export default function connectAdvanced(
                 notifyNestedSubs,
             ])
 
-            // Our re-subscribe logic only runs when the store/subscription setup changes
+            // 我们的重新订阅逻辑只有在 store或者订阅设置发生变化时才会运行。
             useIsomorphicLayoutEffectWithArgs(
                 subscribeUpdates,
                 [
@@ -432,8 +431,8 @@ export default function connectAdvanced(
                 [store, subscription, childPropsSelector]
             )
 
-            // Now that all that's done, we can finally try to actually render the child component.
-            // We memoize the elements for the rendered child component as an optimization.
+            // 现在所有这些都完成了，我们终于可以尝试实际渲染子组件了。
+            // 我们将渲染后的子组件的元素进行记忆，作为一种优化。
             const renderedWrappedComponent = useMemo(
                 () => (
                     <WrappedComponent
@@ -444,13 +443,13 @@ export default function connectAdvanced(
                 [reactReduxForwardedRef, WrappedComponent, actualChildProps]
             )
 
-            // If React sees the exact same element reference as last time, it bails out of re-rendering
-            // that child, same as if it was wrapped in React.memo() or returned false from shouldComponentUpdate.
+            // 如果React看到了与上次完全相同的元素引用，它就会退出重新渲染该子元素，就像在React.memo()中被包裹或从shouldComponentUpdate中返回false一样。
             const renderedChild = useMemo(() => {
+
+                // 确定这个 hoc 是否会监听 store 的改变
                 if (shouldHandleStateChanges) {
-                    // If this component is subscribed to store updates, we need to pass its own
-                    // subscription instance down to our descendants. That means rendering the same
-                    // Context instance, and putting a different value into the context.
+                    // 如果这个组件订阅了存储更新，我们需要将它自己的订阅实例传递给我们的子孙。
+                    // 这意味着渲染相同的Context实例，并将不同的值放入context中。
                     return (
                         <ContextToUse.Provider value={overriddenContextValue}>
                             {renderedWrappedComponent}
