@@ -33,6 +33,35 @@ redux 是一个库,但更是一种思想, 而 react-redux 就是一座桥了, �
 
 3. connect 在想要的组件中使用
 
+## 前置知识点
+
+想要理解此中源码首先就需要理解很多 react hooks 的知识点 还有熟练使用 redux 的经验,
+这里我就先简介一下
+
+### Subscription
+
+我们要先理解一个设计模式 - 订阅发布模式
+他位于文件: react-redux/src/utils/Subscription.js
+具体的代码我们会在后面细说
+
+### hooks
+
+关于 hooks 中 我们需要了解到的知识点:
+
+- useMemo  
+  缓存代码的过程, 如果依赖不变则, 直接返回结果
+
+- useContext  
+  在函数中使用 context 的方案
+
+- useRef  
+  最开始是用来获取 ref 的, 后面也用来存储变量
+
+- useReducer  
+  创建一个小的 reducer, 当然也有他自己的 state 和 dispatch
+
+具体的知识点还需要去官网了解:  https://zh-hans.reactjs.org/docs/hooks-intro.html
+
 ## store
 
 关于 store 的创建

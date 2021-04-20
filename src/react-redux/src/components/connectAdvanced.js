@@ -18,6 +18,7 @@ const stringifyComponent = (Comp) => {
     }
 }
 
+// 一个强制更新
 function storeStateUpdatesReducer(state, action) {
     const [, updateCount] = state
     return [action.payload, updateCount + 1]
@@ -52,6 +53,7 @@ function captureWrapperProps(
     }
 }
 
+// 订阅更新方法
 function subscribeUpdates(
     shouldHandleStateChanges,
     store,
@@ -64,7 +66,7 @@ function subscribeUpdates(
     notifyNestedSubs,
     forceComponentUpdateDispatch
 ) {
-    // If we're not subscribed to the store, nothing to do here
+    // 如果不想从 store 中更新, 则直接返回
     if (!shouldHandleStateChanges) return
 
     // Capture values for checking if and when this component unmounts
