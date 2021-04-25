@@ -93,14 +93,14 @@ export interface Store<S = any, A extends Action = AnyAction> {
 可以查看文件: `react-redux/src/components/Provider.js`
 
 ```
-// 省略文件的引入
+//...
 
 // Provider 主体, 是一个组件, 通常在项目的入口使用
 function Provider({ store, context, children }) {
 
   const contextValue = useMemo(() => {
     // 创建了一个订阅模式, 值为 store
-    // 赋值 onStateChange 为 notifyNestedSubs,  作用 如果 store 值发生了变化 则执行 listener 里的所并回调
+    // 赋值 onStateChange 为 notifyNestedSubs,  作用 绑定了 store, 如果 store 值发生了变化 则执行 listener 里的所并回调
     const subscription = new Subscription(store)
     subscription.onStateChange = subscription.notifyNestedSubs
     return {
@@ -138,19 +138,25 @@ function Provider({ store, context, children }) {
   // 就是 context 的 provider
   return <Context.Provider value={contextValue}>{children}</Context.Provider>
 }
-
-
-// 省略 propTypes
-
-export default Provider
+// ...
 ```
+
+到这里我们就碰到了 `Subscription` 了, 现在需要知道的两点:
+1. 通过 `subscription.addNestedSub(listener)` 函数, 添加监听事件
+2. 通过 `subscription.notifyNestedSubs()`, 触发之前所有的监听事件
+3. `subscription.trySubscribe()` 属于第一点中函数的子函数, 效果出来不能添加回调以外,类似
+4. `subscription.tryUnsubscribe()`, 与第三点相反, 解除监听
+
+现在, 我们罗列下 Provider 做了什么事情:
+1. 创建了 context 需要传递的值
+2. 记录之前 store 的值
+3. 当前 store 值和之前记录的不一样时, 触发监听事件
 
 
 ## connect
 到这里就是真正链接的地方了, 将 redux 的 store 与任意的组件连接
 
 首先查看 connect 的入口文件 `src/connect/connect` :  
-
 
 
 

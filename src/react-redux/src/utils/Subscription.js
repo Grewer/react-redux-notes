@@ -112,6 +112,7 @@ export default class Subscription {
         ? this.parentSub.addNestedSub(this.handleChangeWrapper)
         : this.store.subscribe(this.handleChangeWrapper)
 
+      // 初始化 listeners 系统
       this.listeners = createListenerCollection()
     }
   }
