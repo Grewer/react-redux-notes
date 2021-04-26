@@ -90,6 +90,11 @@ export interface Store<S = any, A extends Action = AnyAction> {
 
 ## provider
 
+### provider 的使用
+
+TODO
+
+### 文件源码入口
 可以查看文件: `react-redux/src/components/Provider.js`
 
 ```
@@ -154,9 +159,44 @@ function Provider({ store, context, children }) {
 
 
 ## connect
-到这里就是真正链接的地方了, 将 redux 的 store 与任意的组件连接
+真正的重头戏来了, 将 redux 的 store 与任意的组件连接
 
-首先查看 connect 的入口文件 `src/connect/connect` :  
+### connect 的使用
+在这里我们首先需要知道的是 `connect` , 通过他是怎么使用的, 倒推回去看源码会更有帮助 
+他的定义:
+```
+function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
+```
+
+可以看到`connect` 可接受 4 个参数
+
+1. 第一个参数:
+  ```
+  mapStateToProps?: (state, ownProps?) => Object
+  ```
+  他是一个函数, 接受 state 和 ownProps, 返回一个对象,
+  如果 mapStateToProps 我们传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
+  除非我们传递 undefined 或者 null, 可以避免不需要的更新
+
+2. 第二个参数
+  ```
+  mapStateToProps?: (state, ownProps?) => Object
+  ```
+
+
+
+#### 返回结果:
+
+这是一个普通的用法:
+
+```
+connect(mapStateToProps, mapDispatchToProps)(App);
+```
+
+
+### 文件源码入口:
+
+查看 connect 的入口文件 `src/connect/connect` :  
 
 
 
@@ -196,3 +236,12 @@ export const getBatch = () => batch
 
 简单的来说就是, 此文件中存储了一个变量 batch, 对外输出了 2 个函数, 设置此变量和获取此变量
 
+
+
+## 结语
+
+
+
+参考文档:
+https://react-redux.js.org/introduction/getting-started
+https://github.com/reduxjs/react-redux
