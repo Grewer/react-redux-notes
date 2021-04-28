@@ -174,16 +174,36 @@ function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
   ```
   mapStateToProps?: (state, ownProps?) => Object
   ```
-  他是一个函数, 接受 state 和 ownProps, 返回一个对象,
-  如果 mapStateToProps 我们传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
-  除非我们传递 undefined 或者 null, 可以避免不需要的更新
+  他是一个函数, 接受 state 和 ownProps 两个参数,  返回一个对象,
+  如果 mapStateToProps 传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
+  如果传递 undefined 或者 null, 可以避免不需要的更新
+
+  关于 `ownProps` 的用法, ownProps 其实就是组件的 props 
+  ``` 
+  const mapStateToProps = (state, ownProps) => ({
+    todo: state.todos[ownProps.id],
+  })
+  ```
 
 2. 第二个参数
   ```
-  mapStateToProps?: (state, ownProps?) => Object
+  mapDispatchToProps?: Object | (dispatch, ownProps?) => Object
   ```
-
-
+  第二个参数, 可以是函数, 可以是对象, 也可以是空值
+  如果是函数, 则可以收取到两个参数, `dispatch` 和 `ownProps`
+  通常我们是这样做的:
+  ``` 
+  const mapDispatchToProps = (dispatch) => {
+  return {
+      increment: () => dispatch({ type: 'INCREMENT' }),
+      decrement: () => dispatch({ type: 'DECREMENT' }),
+    }
+  }
+  ```
+  ownProps 的用法和 mapStateToProps 相同
+  当前参数如果是一个对象的时候, 需要控制里面的属性都是 [action-creator](https://redux.js.org/understanding/thinking-in-redux/glossary#action-creator)
+  在源码中将会调用: `bindActionCreators(mapDispatchToProps, dispatch)` 来生成可用代码
+  官网中的简介: [点击](https://react-redux.js.org/using-react-redux/connect-mapdispatch#defining-mapdispatchtoprops-as-an-object)
 
 #### 返回结果:
 
