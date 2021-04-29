@@ -162,6 +162,8 @@ function Provider({ store, context, children }) {
 真正的重头戏来了, 将 redux 的 store 与任意的组件连接
 
 ### connect 的使用
+
+#### connect 参数
 在这里我们首先需要知道的是 `connect` , 通过他是怎么使用的, 倒推回去看源码会更有帮助 
 他的定义:
 ```
@@ -170,42 +172,68 @@ function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
 
 可以看到`connect` 可接受 4 个参数
 
-1. 第一个参数:
-  ```
-  mapStateToProps?: (state, ownProps?) => Object
-  ```
-  他是一个函数, 接受 state 和 ownProps 两个参数,  返回一个对象,
-  如果 mapStateToProps 传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
-  如果传递 undefined 或者 null, 可以避免不需要的更新
+1. mapStateToProps:
+```
+mapStateToProps?: (state, ownProps?) => Object
+```
+他是一个函数, 接受 state 和 ownProps 两个参数,  返回一个对象,
+如果 mapStateToProps 传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
+如果传递 undefined 或者 null, 可以避免不需要的更新
 
-  关于 `ownProps` 的用法, ownProps 其实就是组件的 props 
-  ``` 
-  const mapStateToProps = (state, ownProps) => ({
-    todo: state.todos[ownProps.id],
-  })
-  ```
+关于 `ownProps` 的用法, ownProps 其实就是组件的 props 
+``` 
+const mapStateToProps = (state, ownProps) => ({
+  todo: state.todos[ownProps.id],
+})
+```
 
-2. 第二个参数
-  ```
-  mapDispatchToProps?: Object | (dispatch, ownProps?) => Object
-  ```
-  第二个参数, 可以是函数, 可以是对象, 也可以是空值
-  如果是函数, 则可以收取到两个参数, `dispatch` 和 `ownProps`
-  通常我们是这样做的:
-  ``` 
-  const mapDispatchToProps = (dispatch) => {
-  return {
-      increment: () => dispatch({ type: 'INCREMENT' }),
-      decrement: () => dispatch({ type: 'DECREMENT' }),
-    }
+2. mapDispatchToProps
+```
+mapDispatchToProps?: Object | (dispatch, ownProps?) => Object
+```
+第二个参数, 可以是函数, 可以是对象, 也可以是空值
+如果是函数, 则可以收取到两个参数, `dispatch` 和 `ownProps`
+通常我们是这样做的:
+``` 
+const mapDispatchToProps = (dispatch) => {
+return {
+    increment: () => dispatch({ type: 'INCREMENT' }),
+    decrement: () => dispatch({ type: 'DECREMENT' }),
   }
-  ```
-  ownProps 的用法和 mapStateToProps 相同
-  当前参数如果是一个对象的时候, 需要控制里面的属性都是 [action-creator](https://redux.js.org/understanding/thinking-in-redux/glossary#action-creator)
-  在源码中将会调用: `bindActionCreators(mapDispatchToProps, dispatch)` 来生成可用代码
-  官网中的简介: [点击](https://react-redux.js.org/using-react-redux/connect-mapdispatch#defining-mapdispatchtoprops-as-an-object)
+}
+```
+ownProps 的用法和 mapStateToProps 相同
+当前参数如果是一个对象的时候, 需要控制里面的属性都是 [action-creator](https://redux.js.org/understanding/thinking-in-redux/glossary#action-creator)
+在源码中将会调用: `bindActionCreators(mapDispatchToProps, dispatch)` 来生成可用代码
+官网中的简介: [点击查看](https://react-redux.js.org/using-react-redux/connect-mapdispatch#defining-mapdispatchtoprops-as-an-object)
 
-#### 返回结果:
+3. mergeProps
+``` 
+mergeProps?: (stateProps, dispatchProps, ownProps) => Object
+```
+这个参数的作用就是, 当前 connect 包装的组件, 对于他的 props 再次自定义
+,如不传递这个属性, 则代码中默认传递值为: `{ ...ownProps, ...stateProps, ...dispatchProps }`
+
+4. options
+```
+options?: Object
+```
+Object 中的内容:
+``` 
+{
+  context?: Object,
+  pure?: boolean,
+  areStatesEqual?: Function,
+  areOwnPropsEqual?: Function,
+  areStatePropsEqual?: Function,
+  areMergedPropsEqual?: Function,
+  forwardRef?: boolean,
+}
+```
+只有版本再 >=6.0 的时候才会有这个属性, 都是配置性的属性, 一般来说默认值就能应付 99% 的情况了
+更加具体的作用可以在此处点击查看: [点击查看](https://react-redux.js.org/api/connect#options-object)
+
+#### connect 返回结果:
 
 这是一个普通的用法:
 
@@ -213,6 +241,16 @@ function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
 connect(mapStateToProps, mapDispatchToProps)(App);
 ```
 
+不难理解,  connect 作为一个高阶函数, 返回的也是一个函数, 所以才会是这种用法
+
+``` 
+const connect = (mapStateToProps, mapDispatchToProps)=>{
+  return (Component) => {
+    return  <Conponent /> 
+  }
+}
+```
+具体应该就是这样, 现在带着我们的理解和疑问再来进入 connect 源码
 
 ### 文件源码入口:
 
