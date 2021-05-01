@@ -255,6 +255,92 @@ const connect = (mapStateToProps, mapDispatchToProps)=>{
 ### 文件源码入口:
 
 查看 connect 的入口文件 `src/connect/connect` :  
+这个文件定义了一个 `createConnect` 函数, 这是用来生成 connect 的:
+``` 
+export function createConnect({
+  connectHOC = connectAdvanced,
+  mapStateToPropsFactories = defaultMapStateToPropsFactories,
+  mapDispatchToPropsFactories = defaultMapDispatchToPropsFactories,
+  mergePropsFactories = defaultMergePropsFactories,
+  selectorFactory = defaultSelectorFactory,
+} = {}) {
+  // 返回真正的 connect 函数
+  return function connect(
+    mapStateToProps,
+    mapDispatchToProps,
+    mergeProps,
+    {
+      pure = true,
+      areStatesEqual = strictEqual,
+      areOwnPropsEqual = shallowEqual,
+      areStatePropsEqual = shallowEqual,
+      areMergedPropsEqual = shallowEqual,
+      ...extraOptions
+    } = {}
+  ) {
+
+    // 判断 mapStateToProps 是否符合已经定义的规则
+    // mapStateToPropsFactories 可以想象成你对
+    // mapStateToProps 做了一些判断, 只要有一个判断符合了
+    // 就可以成功返回值
+    // mapStateToPropsFactories 的规则会在 react-redux/src/connect/mapStateToProps.js 里讲解
+    // 默认的 defaultMapStateToPropsFactories 有两个规则
+    // 1. 如果是函数, 会使用 wrapMapToPropsFunc 包裹, 并且直接return结果
+    // 2. 如果没有传值, 则会使用 wrapMapToPropsConstant 包裹
+    const initMapStateToProps = match(
+      mapStateToProps,
+      mapStateToPropsFactories,
+      'mapStateToProps'
+    )
+
+    // 同上 但是 他的默认规则是 defaultMapDispatchToPropsFactories
+    // 在 react-redux/src/connect/mapDispatchToProps.js 此文件中
+    const initMapDispatchToProps = match(
+      mapDispatchToProps,
+      mapDispatchToPropsFactories,
+      'mapDispatchToProps'
+    )
+
+    // 同上
+    const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
+
+    // 包裹组件的高阶函数 connect(mapStateToProps, ...)
+    return connectHOC(selectorFactory, {
+      // 方便 error messages 打印
+      methodName: 'connect',
+
+      // 用于从包装的组件的displayName计算Connect的displayName。
+      getDisplayName: (name) => `Connect(${name})`,
+
+      // 如果mapStateToProps 为 falsy，则Connect组件不订阅存储状态更改
+      shouldHandleStateChanges: Boolean(mapStateToProps),
+
+      //  传递给 selectorFactory 的参数
+      initMapStateToProps,
+      initMapDispatchToProps,
+      initMergeProps,
+      pure,
+      areStatesEqual,
+      areOwnPropsEqual,
+      areStatePropsEqual,
+      areMergedPropsEqual,
+      //
+      ...extraOptions,
+    })
+  }
+}
+
+```
+
+`defaultMapStateToPropsFactories`, `defaultMapDispatchToPropsFactories` , `defaultMergePropsFactories` , `defaultSelectorFactory` 我们会放在下面研究, 现在先知道他是做什么的
+
+同样的, 在这个文件 我们可以看到 connect 的雏形了
+
+真实的执行顺序:  createConnect() -> connect() -> connectHOC() = connectAdvanced() -> wrapWithConnect(Component)
+
+下一步就是  connectAdvanced() 中执行了什么:
+这个我们需要在 `react-redux/src/components/connectAdvanced.js` 这个文件中查看:
+
 
 
 
