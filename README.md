@@ -256,7 +256,7 @@ const connect = (mapStateToProps, mapDispatchToProps)=>{
 
 查看 connect 的入口文件 `src/connect/connect` :  
 这个文件定义了一个 `createConnect` 函数, 这是用来生成 connect 的:
-``` 
+```js
 export function createConnect({
   connectHOC = connectAdvanced,
   mapStateToPropsFactories = defaultMapStateToPropsFactories,
@@ -336,11 +336,112 @@ export function createConnect({
 
 同样的, 在这个文件 我们可以看到 connect 的雏形了
 
-真实的执行顺序:  createConnect() -> connect() -> connectHOC() = connectAdvanced() -> wrapWithConnect(Component)
+真实的执行顺序:  `createConnect()` -> `connect()` -> `connectHOC()` = `connectAdvanced()` -> `wrapWithConnect(Component)`
 
-下一步就是  connectAdvanced() 中执行了什么:
+下一步就是  `connectAdvanced()` 中执行了什么:
+
+#### connectAdvanced
+
 这个我们需要在 `react-redux/src/components/connectAdvanced.js` 这个文件中查看:
 
+`connectAdvanced` 较为复杂, 我们将它分段提取, 首先我们来看他的传参
+```js
+export default function connectAdvanced(
+ // 这些是 connect 第一步中提供的参数
+    selectorFactory, // 默认为 defaultSelectorFactory
+    // options object:
+    {
+        //用于从包装的组件的displayName计算此HOC的displayName的函数。
+        getDisplayName = (name) => `ConnectAdvanced(${name})`,
+
+        // 在 error message  中显示 容易 debug
+        methodName = 'connectAdvanced',
+
+        // 没有太大作用, 后面可能会删除
+        renderCountProp = undefined,
+
+        // 确定这个 hoc 是否会监听 store 的改变
+        shouldHandleStateChanges = true,
+
+        // 没有太大作用, 后面可能会删除
+
+        storeKey = 'store',
+        // 没有太大作用, 后面可能会删除
+        withRef = false,
+
+        // 是否使用了 forwardRef
+        forwardRef = false,
+
+        // 使用的 Context
+        context = ReactReduxContext,
+
+        //额外参数
+        ...connectOptions
+    } = {}
+) {
+    // 省略了参数的校验
+    const Context = context
+    return function wrapWithConnect(WrappedComponent) {
+        // ...
+    }
+}
+```
+
+这些参数都是可以在 `createConnect` 中找到, 可以看到 `connectAdvanced` 返回的 `wrapWithConnect`, 就是我们用来正真返回的, 用来包裹组件的函数
+
+
+#### wrapWithConnect
+
+在 `wrapWithConnect` 也有一个主体函数 `ConnectFunction`, 这里我们先讲除此函数之外的作用
+
+```js
+function wrapWithConnect(WrappedComponent) {
+        // 省略校检
+        const wrappedComponentName =
+            WrappedComponent.displayName || WrappedComponent.name || 'Component'
+
+        const displayName = getDisplayName(wrappedComponentName)
+        // 上面两行都是获取组件名称 默认(Component)
+
+
+        const selectorFactoryOptions = {
+            ...connectOptions,
+            getDisplayName,
+            methodName,
+            renderCountProp,
+            shouldHandleStateChanges,
+            storeKey,
+            displayName,
+            wrappedComponentName,
+            WrappedComponent,
+        }
+
+        const {pure} = connectOptions // 第一步传递过来的参数  默认为 true
+
+        // 创建子选择器的函数 声明
+        function createChildSelector(store) {
+            return selectorFactory(store.dispatch, selectorFactoryOptions)
+        }
+
+
+        // 如果 pure 为 false, 则直接指向回调 而不是 useMemo
+        const usePureOnlyMemo = pure ? useMemo : (callback) => callback()
+
+        // 当前整个函数的主体部分 接受 props 返回 JSX 并且会用 Context 包裹
+        function ConnectFunction(props) {
+            // 省略函数主体
+        }
+        // 通过 pure 来确定是否要加 memo
+        const Connect = pure ? React.memo(ConnectFunction) : ConnectFunction
+
+        Connect.WrappedComponent = WrappedComponent
+        Connect.displayName = displayName
+
+        // forwardRef 省略
+
+        return hoistStatics(Connect, WrappedComponent)
+    }
+```
 
 
 
