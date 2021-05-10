@@ -588,6 +588,7 @@ function ConnectFunction(props) {
     // 我们需要在每次重新渲染时同步执行。
     // 然而，React会对SSR中的useLayoutEffect发出警告, 避免警告
     // 相当于在 useLayoutEffect 中执行, 包装了一下
+    // 第一个参数是待执行函数, 第二个是函数参数, 第三个依赖
     useIsomorphicLayoutEffectWithArgs(captureWrapperProps, [
         lastWrapperProps,
         lastChildProps,
@@ -631,7 +632,7 @@ function ConnectFunction(props) {
     // 如果React看到了与上次完全相同的元素引用，它就会退出重新渲染该子元素，就像在React.memo()中被包裹或从shouldComponentUpdate中返回false一样。
     const renderedChild = useMemo(() => {
 
-        // 确定这个 hoc 是否会监听 store 的改变
+        // 确定这个 hoc 是否会监听 store 的改变, 默认是 true
         if (shouldHandleStateChanges) {
             // 如果这个组件订阅了存储更新，我们需要将它自己的订阅实例传递给我们的子孙。
             // 这意味着渲染相同的Context实例，并将不同的值放入context中。
@@ -648,6 +649,62 @@ function ConnectFunction(props) {
     return renderedChild
 }
 
+```
+这一部分便是 connect 的核心代码
+
+再肢解一下上面的代码可分为一下几个步骤:
+
+确定 Context -> 确定 store 来源 -> 将一个订阅,发布合并到 contextValue 中  ->  组件更新后, 检查 store 值是否变化 -> 返回包装组件
+
+
+再解释这部分代码中的引用的部分函数: `captureWrapperProps` , `subscribeUpdates`
+
+#### captureWrapperProps
+代码是在这里:
+```js
+ useIsomorphicLayoutEffectWithArgs(captureWrapperProps, [
+    lastWrapperProps,
+    lastChildProps,
+    renderIsScheduled,
+    wrapperProps,
+    actualChildProps,
+    childPropsFromStoreUpdate,
+    notifyNestedSubs,
+])
+```
+转换一下:
+```js
+useLayoutEffect(()=>{
+  captureWrapperProps(
+    lastWrapperProps,
+    lastChildProps,
+    renderIsScheduled,
+    wrapperProps,
+    actualChildProps,
+    childPropsFromStoreUpdate,
+    notifyNestedSubs
+  )
+})
+
+function captureWrapperProps(
+        lastWrapperProps,
+        lastChildProps,
+        renderIsScheduled,
+        wrapperProps,
+        actualChildProps,
+        childPropsFromStoreUpdate,
+        notifyNestedSubs
+) {
+  lastWrapperProps.current = wrapperProps
+  lastChildProps.current = actualChildProps
+  renderIsScheduled.current = false
+
+  // 如果渲染是来自store的更新，则清除该引用 并且触发订阅
+  if (childPropsFromStoreUpdate.current) {
+    childPropsFromStoreUpdate.current = null
+    notifyNestedSubs()
+  }
+}
 ```
 
 ## 其他
