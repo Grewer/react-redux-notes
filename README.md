@@ -35,14 +35,11 @@ redux 是一个库,但更是一种思想, 而 react-redux 就是一座桥了, �
 
 ## 前置知识点
 
-想要理解此中源码首先就需要理解很多 react hooks 的知识点 还有熟练使用 redux 的经验,
-这里我就先简介一下
+想要理解此中源码首先就需要理解很多 react hooks 的知识点 还有熟练使用 redux 的经验, 这里我就先简介一下
 
 ### Subscription
 
-我们要先理解一个设计模式 - 订阅发布模式
-他位于文件: react-redux/src/utils/Subscription.js
-具体的代码我们会在后面细说
+我们要先理解一个设计模式 - 订阅发布模式 他位于文件: react-redux/src/utils/Subscription.js 具体的代码我们会在后面细说
 
 ### hooks
 
@@ -68,7 +65,7 @@ redux 是一个库,但更是一种思想, 而 react-redux 就是一座桥了, �
 
 store 使用的主要就是 redux 的 api, 不管 `combineReducers` 还是 `createStore`
 
-关于 redux 的 store  提供了以下 API:
+关于 redux 的 store 提供了以下 API:
 
 ```
 export interface Store<S = any, A extends Action = AnyAction> {
@@ -95,6 +92,7 @@ export interface Store<S = any, A extends Action = AnyAction> {
 TODO
 
 ### 文件源码入口
+
 可以查看文件: `react-redux/src/components/Provider.js`
 
 ```
@@ -147,25 +145,28 @@ function Provider({ store, context, children }) {
 ```
 
 到这里我们就碰到了 `Subscription` 了, 现在需要知道的两点:
+
 1. 通过 `subscription.addNestedSub(listener)` 函数, 添加监听事件
 2. 通过 `subscription.notifyNestedSubs()`, 触发之前所有的监听事件
 3. `subscription.trySubscribe()` 属于第一点中函数的子函数, 效果出来不能添加回调以外,类似
 4. `subscription.tryUnsubscribe()`, 与第三点相反, 解除监听
 
 现在, 我们罗列下 Provider 做了什么事情:
+
 1. 创建了 context 需要传递的值
 2. 记录之前 store 的值
 3. 当前 store 值和之前记录的不一样时, 触发监听事件
 
-
 ## connect
+
 真正的重头戏来了, 将 redux 的 store 与任意的组件连接
 
 ### connect 的使用
 
 #### connect 参数
-在这里我们首先需要知道的是 `connect` , 通过他是怎么使用的, 倒推回去看源码会更有帮助 
-他的定义:
+
+在这里我们首先需要知道的是 `connect` , 通过他是怎么使用的, 倒推回去看源码会更有帮助 他的定义:
+
 ```
 function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
 ```
@@ -173,14 +174,16 @@ function connect(mapStateToProps?, mapDispatchToProps?, mergeProps?, options?)
 可以看到`connect` 可接受 4 个参数
 
 1. mapStateToProps:
+
 ```
 mapStateToProps?: (state, ownProps?) => Object
 ```
-他是一个函数, 接受 state 和 ownProps 两个参数,  返回一个对象,
-如果 mapStateToProps 传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新
-如果传递 undefined 或者 null, 可以避免不需要的更新
 
-关于 `ownProps` 的用法, ownProps 其实就是组件的 props 
+他是一个函数, 接受 state 和 ownProps 两个参数, 返回一个对象, 如果 mapStateToProps 传递的是一个函数, 那么 store 更新的时候,包装的组件也会订阅更新 如果传递 undefined 或者
+null, 可以避免不需要的更新
+
+关于 `ownProps` 的用法, ownProps 其实就是组件的 props
+
 ``` 
 const mapStateToProps = (state, ownProps) => ({
   todo: state.todos[ownProps.id],
@@ -188,12 +191,14 @@ const mapStateToProps = (state, ownProps) => ({
 ```
 
 2. mapDispatchToProps
+
 ```
 mapDispatchToProps?: Object | (dispatch, ownProps?) => Object
 ```
-第二个参数, 可以是函数, 可以是对象, 也可以是空值
-如果是函数, 则可以收取到两个参数, `dispatch` 和 `ownProps`
+
+第二个参数, 可以是函数, 可以是对象, 也可以是空值 如果是函数, 则可以收取到两个参数, `dispatch` 和 `ownProps`
 通常我们是这样做的:
+
 ``` 
 const mapDispatchToProps = (dispatch) => {
 return {
@@ -202,23 +207,28 @@ return {
   }
 }
 ```
-ownProps 的用法和 mapStateToProps 相同
-当前参数如果是一个对象的时候, 需要控制里面的属性都是 [action-creator](https://redux.js.org/understanding/thinking-in-redux/glossary#action-creator)
+
+ownProps 的用法和 mapStateToProps 相同 当前参数如果是一个对象的时候,
+需要控制里面的属性都是 [action-creator](https://redux.js.org/understanding/thinking-in-redux/glossary#action-creator)
 在源码中将会调用: `bindActionCreators(mapDispatchToProps, dispatch)` 来生成可用代码
 官网中的简介: [点击查看](https://react-redux.js.org/using-react-redux/connect-mapdispatch#defining-mapdispatchtoprops-as-an-object)
 
 3. mergeProps
+
 ``` 
 mergeProps?: (stateProps, dispatchProps, ownProps) => Object
 ```
-这个参数的作用就是, 当前 connect 包装的组件, 对于他的 props 再次自定义
-,如不传递这个属性, 则代码中默认传递值为: `{ ...ownProps, ...stateProps, ...dispatchProps }`
+
+这个参数的作用就是, 当前 connect 包装的组件, 对于他的 props 再次自定义 ,如不传递这个属性, 则代码中默认传递值为: `{ ...ownProps, ...stateProps, ...dispatchProps }`
 
 4. options
+
 ```
 options?: Object
 ```
+
 Object 中的内容:
+
 ``` 
 {
   context?: Object,
@@ -230,6 +240,7 @@ Object 中的内容:
   forwardRef?: boolean,
 }
 ```
+
 只有版本再 >=6.0 的时候才会有这个属性, 都是配置性的属性, 一般来说默认值就能应付 99% 的情况了
 更加具体的作用可以在此处点击查看: [点击查看](https://react-redux.js.org/api/connect#options-object)
 
@@ -241,7 +252,7 @@ Object 中的内容:
 connect(mapStateToProps, mapDispatchToProps)(App);
 ```
 
-不难理解,  connect 作为一个高阶函数, 返回的也是一个函数, 所以才会是这种用法
+不难理解, connect 作为一个高阶函数, 返回的也是一个函数, 所以才会是这种用法
 
 ``` 
 const connect = (mapStateToProps, mapDispatchToProps)=>{
@@ -250,89 +261,92 @@ const connect = (mapStateToProps, mapDispatchToProps)=>{
   }
 }
 ```
+
 具体应该就是这样, 现在带着我们的理解和疑问再来进入 connect 源码
 
 ### 文件源码入口:
 
 查看 connect 的入口文件 `src/connect/connect` :  
 这个文件定义了一个 `createConnect` 函数, 这是用来生成 connect 的:
+
 ```js
 export function createConnect({
-  connectHOC = connectAdvanced,
-  mapStateToPropsFactories = defaultMapStateToPropsFactories,
-  mapDispatchToPropsFactories = defaultMapDispatchToPropsFactories,
-  mergePropsFactories = defaultMergePropsFactories,
-  selectorFactory = defaultSelectorFactory,
-} = {}) {
-  // 返回真正的 connect 函数
-  return function connect(
-    mapStateToProps,
-    mapDispatchToProps,
-    mergeProps,
-    {
-      pure = true,
-      areStatesEqual = strictEqual,
-      areOwnPropsEqual = shallowEqual,
-      areStatePropsEqual = shallowEqual,
-      areMergedPropsEqual = shallowEqual,
-      ...extraOptions
-    } = {}
-  ) {
+                                  connectHOC = connectAdvanced,
+                                  mapStateToPropsFactories = defaultMapStateToPropsFactories,
+                                  mapDispatchToPropsFactories = defaultMapDispatchToPropsFactories,
+                                  mergePropsFactories = defaultMergePropsFactories,
+                                  selectorFactory = defaultSelectorFactory,
+                              } = {}) {
+    // 返回真正的 connect 函数
+    return function connect(
+        mapStateToProps,
+        mapDispatchToProps,
+        mergeProps,
+        {
+            pure = true,
+            areStatesEqual = strictEqual,
+            areOwnPropsEqual = shallowEqual,
+            areStatePropsEqual = shallowEqual,
+            areMergedPropsEqual = shallowEqual,
+            ...extraOptions
+        } = {}
+    ) {
 
-    // 判断 mapStateToProps 是否符合已经定义的规则
-    // mapStateToPropsFactories 可以想象成你对
-    // mapStateToProps 做了一些判断, 只要有一个判断符合了
-    // 就可以成功返回值
-    // mapStateToPropsFactories 的规则会在 react-redux/src/connect/mapStateToProps.js 里讲解
-    // 默认的 defaultMapStateToPropsFactories 有两个规则
-    // 1. 如果是函数, 会使用 wrapMapToPropsFunc 包裹, 并且直接return结果
-    // 2. 如果没有传值, 则会使用 wrapMapToPropsConstant 包裹
-    const initMapStateToProps = match(
-      mapStateToProps,
-      mapStateToPropsFactories,
-      'mapStateToProps'
-    )
+        // 判断 mapStateToProps 是否符合已经定义的规则
+        // mapStateToPropsFactories 可以想象成你对
+        // mapStateToProps 做了一些判断, 只要有一个判断符合了
+        // 就可以成功返回值
+        // mapStateToPropsFactories 的规则会在 react-redux/src/connect/mapStateToProps.js 里讲解
+        // 默认的 defaultMapStateToPropsFactories 有两个规则
+        // 1. 如果是函数, 会使用 wrapMapToPropsFunc 包裹, 并且直接return结果
+        // 2. 如果没有传值, 则会使用 wrapMapToPropsConstant 包裹
+        const initMapStateToProps = match(
+            mapStateToProps,
+            mapStateToPropsFactories,
+            'mapStateToProps'
+        )
 
-    // 同上 但是 他的默认规则是 defaultMapDispatchToPropsFactories
-    // 在 react-redux/src/connect/mapDispatchToProps.js 此文件中
-    const initMapDispatchToProps = match(
-      mapDispatchToProps,
-      mapDispatchToPropsFactories,
-      'mapDispatchToProps'
-    )
+        // 同上 但是 他的默认规则是 defaultMapDispatchToPropsFactories
+        // 在 react-redux/src/connect/mapDispatchToProps.js 此文件中
+        const initMapDispatchToProps = match(
+            mapDispatchToProps,
+            mapDispatchToPropsFactories,
+            'mapDispatchToProps'
+        )
 
-    // 同上
-    const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
+        // 同上
+        const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
 
-    // 包裹组件的高阶函数 connect(mapStateToProps, ...)
-    return connectHOC(selectorFactory, {
-      // 方便 error messages 打印
-      methodName: 'connect',
+        // 包裹组件的高阶函数 connect(mapStateToProps, ...)
+        return connectHOC(selectorFactory, {
+            // 方便 error messages 打印
+            methodName: 'connect',
 
-      // 用于从包装的组件的displayName计算Connect的displayName。
-      getDisplayName: (name) => `Connect(${name})`,
+            // 用于从包装的组件的displayName计算Connect的displayName。
+            getDisplayName: (name) => `Connect(${name})`,
 
-      // 如果mapStateToProps 为 falsy，则Connect组件不订阅存储状态更改
-      shouldHandleStateChanges: Boolean(mapStateToProps),
+            // 如果mapStateToProps 为 falsy，则Connect组件不订阅存储状态更改
+            shouldHandleStateChanges: Boolean(mapStateToProps),
 
-      //  传递给 selectorFactory 的参数
-      initMapStateToProps,
-      initMapDispatchToProps,
-      initMergeProps,
-      pure,
-      areStatesEqual,
-      areOwnPropsEqual,
-      areStatePropsEqual,
-      areMergedPropsEqual,
-      //
-      ...extraOptions,
-    })
-  }
+            //  传递给 selectorFactory 的参数
+            initMapStateToProps,
+            initMapDispatchToProps,
+            initMergeProps,
+            pure,
+            areStatesEqual,
+            areOwnPropsEqual,
+            areStatePropsEqual,
+            areMergedPropsEqual,
+            //
+            ...extraOptions,
+        })
+    }
 }
 
 ```
 
-`defaultMapStateToPropsFactories`, `defaultMapDispatchToPropsFactories` , `defaultMergePropsFactories` , `defaultSelectorFactory` 我们会放在下面研究, 现在先知道他是做什么的
+`defaultMapStateToPropsFactories`, `defaultMapDispatchToPropsFactories` , `defaultMergePropsFactories`
+, `defaultSelectorFactory` 我们会放在下面研究, 现在先知道他是做什么的
 
 同样的, 在这个文件 我们可以看到 connect 的雏形了
 
@@ -345,9 +359,10 @@ export function createConnect({
 这个我们需要在 `react-redux/src/components/connectAdvanced.js` 这个文件中查看:
 
 `connectAdvanced` 较为复杂, 我们将它分段提取, 首先我们来看他的传参
+
 ```js
 export default function connectAdvanced(
- // 这些是 connect 第一步中提供的参数
+    // 这些是 connect 第一步中提供的参数
     selectorFactory, // 默认为 defaultSelectorFactory
     // options object:
     {
@@ -389,68 +404,71 @@ export default function connectAdvanced(
 
 这些参数都是可以在 `createConnect` 中找到, 可以看到 `connectAdvanced` 返回的 `wrapWithConnect`, 就是我们用来正真返回的, 用来包裹组件的函数
 
-
 #### wrapWithConnect
 
 在 `wrapWithConnect` 也有一个主体函数 `ConnectFunction`, 这里我们先讲除此函数之外的作用
 
 ```js
 function wrapWithConnect(WrappedComponent) {
-        // 省略校检
-  
-        const wrappedComponentName =
-            WrappedComponent.displayName || WrappedComponent.name || 'Component'
+    // 省略校检
 
-        const displayName = getDisplayName(wrappedComponentName)
-        // 上面两行都是获取组件名称 默认(Component)
+    const wrappedComponentName =
+        WrappedComponent.displayName || WrappedComponent.name || 'Component'
 
-
-        const selectorFactoryOptions = {
-            ...connectOptions,
-            getDisplayName,
-            methodName,
-            renderCountProp,
-            shouldHandleStateChanges,
-            storeKey,
-            displayName,
-            wrappedComponentName,
-            WrappedComponent,
-        }
-        // 将 WrappedComponent 和  connectAdvanced中的参数集合在了一起
-
-        const {pure} = connectOptions // 第一步传递过来的参数  默认为 true
-
-        // 创建子选择器的函数 声明
-        function createChildSelector(store) {
-            return selectorFactory(store.dispatch, selectorFactoryOptions)
-        }
+    const displayName = getDisplayName(wrappedComponentName)
+    // 上面两行都是获取组件名称 默认(Component)
 
 
-        // 如果 pure 为 false, 则直接指向回调 而不是 useMemo
-        const usePureOnlyMemo = pure ? useMemo : (callback) => callback()
-
-        // 当前整个函数的主体部分 接受 props 返回 JSX 并且会用 Context 包裹
-        function ConnectFunction(props) {
-            // 省略函数主体
-        }
-        // 通过 pure 来确定是否要加 memo
-        const Connect = pure ? React.memo(ConnectFunction) : ConnectFunction
-
-        Connect.WrappedComponent = WrappedComponent
-        Connect.displayName = displayName
-
-        // forwardRef 省略
-
-        return hoistStatics(Connect, WrappedComponent)
+    const selectorFactoryOptions = {
+        ...connectOptions,
+        getDisplayName,
+        methodName,
+        renderCountProp,
+        shouldHandleStateChanges,
+        storeKey,
+        displayName,
+        wrappedComponentName,
+        WrappedComponent,
     }
+    // 将 WrappedComponent 和  connectAdvanced中的参数集合在了一起
+
+    const {pure} = connectOptions // 第一步传递过来的参数  默认为 true
+
+    // 创建子选择器的函数 声明
+    function createChildSelector(store) {
+        return selectorFactory(store.dispatch, selectorFactoryOptions)
+    }
+
+
+    // 如果 pure 为 false, 则直接指向回调 而不是 useMemo
+    const usePureOnlyMemo = pure ? useMemo : (callback) => callback()
+
+    // 当前整个函数的主体部分 接受 props 返回 JSX 并且会用 Context 包裹
+    function ConnectFunction(props) {
+        // 省略函数主体
+    }
+
+    // 通过 pure 来确定是否要加 memo
+    const Connect = pure ? React.memo(ConnectFunction) : ConnectFunction
+
+    Connect.WrappedComponent = WrappedComponent
+    Connect.displayName = displayName
+
+    // forwardRef 省略
+
+    return hoistStatics(Connect, WrappedComponent)
+}
 ```
 
 #### hoistStatics
+
 这里要说下 `hoistStatics` , 他来自于 `hoist-non-react-statics` 这个库  
 简单的来说可以看成 `Object.assign`, 但是他是组件级别的
 
 #### ConnectFunction
+
 `ConnectFunction` 可以说是经过上一步的包装之后 真正在执行中的函数
+
 ```js
 function ConnectFunction(props) {
     const [
@@ -466,7 +484,7 @@ function ConnectFunction(props) {
     }, [props])
 
     const ContextToUse = useMemo(() => {
-       // 用户可以选择传入自定义上下文实例来代替我们的ReactReduxContext使用。
+        // 用户可以选择传入自定义上下文实例来代替我们的ReactReduxContext使用。
         // 记住确定应该使用哪个上下文实例的检查。
         // 此处使用的是官方注释
         return propsContext &&
@@ -479,8 +497,8 @@ function ConnectFunction(props) {
     // useContext 不用多说
     const contextValue = useContext(ContextToUse)
     // 到此处位置都是 context 的预备工作
-  
-  
+
+
     // store 必须存在于 props 或 context
     // 我们将首先检查它是否看起来像 Redux store。
     // 这使我们可以通过一个 “store” props，该 props 只是一个简单的值。
@@ -494,13 +512,12 @@ function ConnectFunction(props) {
         Boolean(contextValue) && Boolean(contextValue.store)
 
     //省略报错判断
-  
+
     // 获取 store  赋值
     const store = didStoreComeFromProps ? props.store : contextValue.store
     // 到这是 store 的判断
-  
-  
-  
+
+
     const childPropsSelector = useMemo(() => {
         // 子道具选择器需要store参考作为输入。每当store更改时，则重新创建此选择器。
         return createChildSelector(store)
@@ -650,17 +667,19 @@ function ConnectFunction(props) {
 }
 
 ```
+
 这一部分便是 connect 的核心代码
 
 再肢解一下上面的代码可分为一下几个步骤:
 
-确定 Context -> 确定 store 来源 -> 将一个订阅,发布合并到 contextValue 中  ->  组件更新后, 检查 store 值是否变化 -> 返回包装组件
-
+确定 Context -> 确定 store 来源 -> 将一个订阅,发布合并到 contextValue 中 ->  组件更新后, 检查 store 值是否变化 -> 返回包装组件
 
 再解释这部分代码中的引用的部分函数: `captureWrapperProps` , `subscribeUpdates`
 
 #### captureWrapperProps
+
 代码是在这里:
+
 ```js
  useIsomorphicLayoutEffectWithArgs(captureWrapperProps, [
     lastWrapperProps,
@@ -672,21 +691,12 @@ function ConnectFunction(props) {
     notifyNestedSubs,
 ])
 ```
-转换一下:
-```js
-useLayoutEffect(()=>{
-  captureWrapperProps(
-    lastWrapperProps,
-    lastChildProps,
-    renderIsScheduled,
-    wrapperProps,
-    actualChildProps,
-    childPropsFromStoreUpdate,
-    notifyNestedSubs
-  )
-})
 
-function captureWrapperProps(
+转换一下:
+
+```js
+useLayoutEffect(() => {
+    captureWrapperProps(
         lastWrapperProps,
         lastChildProps,
         renderIsScheduled,
@@ -694,18 +704,181 @@ function captureWrapperProps(
         actualChildProps,
         childPropsFromStoreUpdate,
         notifyNestedSubs
-) {
-  lastWrapperProps.current = wrapperProps
-  lastChildProps.current = actualChildProps
-  renderIsScheduled.current = false
+    )
+})
 
-  // 如果渲染是来自store的更新，则清除该引用 并且触发订阅
-  if (childPropsFromStoreUpdate.current) {
-    childPropsFromStoreUpdate.current = null
-    notifyNestedSubs()
-  }
+function captureWrapperProps(
+    lastWrapperProps,
+    lastChildProps,
+    renderIsScheduled,
+    wrapperProps,
+    actualChildProps,
+    childPropsFromStoreUpdate,
+    notifyNestedSubs
+) {
+    lastWrapperProps.current = wrapperProps
+    lastChildProps.current = actualChildProps
+    renderIsScheduled.current = false
+
+    // 如果渲染是来自store的更新，则清除该引用 并且触发订阅
+    if (childPropsFromStoreUpdate.current) {
+        childPropsFromStoreUpdate.current = null
+        notifyNestedSubs()
+    }
 }
 ```
+
+#### subscribeUpdates
+
+源码:
+
+```js
+useIsomorphicLayoutEffectWithArgs(
+    subscribeUpdates,
+    [
+        shouldHandleStateChanges,
+        store,
+        subscription,
+        childPropsSelector,
+        lastWrapperProps,
+        lastChildProps,
+        renderIsScheduled,
+        childPropsFromStoreUpdate,
+        notifyNestedSubs,
+        forceComponentUpdateDispatch,
+    ],
+    [store, subscription, childPropsSelector]
+)
+```
+
+同样地经过转换:
+
+```js
+useLayoutEffect(() => {
+    subscribeUpdates(
+        shouldHandleStateChanges,
+        store,
+        subscription,
+        childPropsSelector,
+        lastWrapperProps,
+        lastChildProps,
+        renderIsScheduled,
+        childPropsFromStoreUpdate,
+        notifyNestedSubs,
+        forceComponentUpdateDispatch,
+    )
+}, [store, subscription, childPropsSelector])
+```
+
+我们再看 `subscribeUpdates` 做了什么, 这里就比较复杂了:
+
+```js
+function subscribeUpdates(
+    shouldHandleStateChanges,
+    store,
+    subscription,
+    childPropsSelector,
+    lastWrapperProps,
+    lastChildProps,
+    renderIsScheduled,
+    childPropsFromStoreUpdate,
+    notifyNestedSubs,
+    forceComponentUpdateDispatch
+) {
+    // 如果不想从 store 中更新, 则直接返回
+    if (!shouldHandleStateChanges) return
+
+    let didUnsubscribe = false
+    let lastThrownError = null
+
+    // 每次 store 的订阅更新传播到这个组件时，我们都会运行这个回调。
+    const checkForUpdates = () => {
+        if (didUnsubscribe) {
+            // Redux不能保证取消订阅会在下一次发送之前发生。
+            return
+        }
+
+        const latestStoreState = store.getState()
+
+        let newChildProps, error
+        try {
+            // 用最新的store状态和包装运行选择器
+            newChildProps = childPropsSelector(
+                latestStoreState,
+                lastWrapperProps.current
+            )
+        } catch (e) {
+            error = e
+            lastThrownError = e
+        }
+
+        if (!error) {
+            lastThrownError = null
+        }
+
+        // 如果没变化就不做什么
+        if (newChildProps === lastChildProps.current) {
+            if (!renderIsScheduled.current) {
+                notifyNestedSubs()
+            }
+        } else {
+            // 保存对新的子props的引用。 
+            lastChildProps.current = newChildProps
+            childPropsFromStoreUpdate.current = newChildProps
+            renderIsScheduled.current = true
+
+            // If the child props _did_ change (or we caught an error), this wrapper component needs to re-render
+            // 如果 子 props 确实发生了变化, 那么  wrapperComponent 需要重渲染
+            forceComponentUpdateDispatch({
+                type: 'STORE_UPDATED',
+                payload: {
+                    error,
+                },
+            })
+        }
+    }
+
+    subscription.onStateChange = checkForUpdates
+    subscription.trySubscribe()
+
+    // 执行 
+    checkForUpdates()
+
+    // 在第一次渲染后从store拉出数据，以防store在我们开始后发生变化。
+    const unsubscribeWrapper = () => {
+        didUnsubscribe = true
+        subscription.tryUnsubscribe()
+        subscription.onStateChange = null
+
+
+        // 如果出错, 但是到此声明周期还没解决, 就触发报错
+        if (lastThrownError) {
+            throw lastThrownError
+        }
+    }
+
+    return unsubscribeWrapper
+}
+
+```
+
+从这几行可以看出来, store 或者 props 的变化都会导致此包装组件的再渲染, 选渲染中又加上了判断, 可以控制子组件是否真的能够渲染
+
+#### selectorFactory
+
+补漏, 这函数是获取 store 的, 之前使用的地方
+
+```js
+const childPropsSelector = useMemo(() => {
+    return createChildSelector(store)
+}, [store])
+
+function createChildSelector(store) {
+    return selectorFactory(store.dispatch, selectorFactoryOptions)
+}
+```
+在默认情况下 selectorFactory = defaultSelectorFactory  
+源文件: `react-redux/src/connect/selectorFactory.js`
 
 ## 其他
 
@@ -743,11 +916,7 @@ export const getBatch = () => batch
 
 简单的来说就是, 此文件中存储了一个变量 batch, 对外输出了 2 个函数, 设置此变量和获取此变量
 
-
-
 ## 结语
-
-
 
 参考文档:
 https://react-redux.js.org/introduction/getting-started
