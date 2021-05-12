@@ -864,11 +864,20 @@ function subscribeUpdates(
 
 从这几行可以看出来, store 或者 props 的变化都会导致此包装组件的再渲染, 选渲染中又加上了判断, 可以控制子组件是否真的能够渲染
 
-#### selectorFactory
+### 补漏
 
-补漏, 这函数是获取 store 的, 之前使用的地方
+#### selectorFactory
+这函数是获取 store 的, 之前使用的地方
 
 ```js
+// childPropsSelector使用 1
+newChildProps = childPropsSelector(
+        latestStoreState,
+        lastWrapperProps.current
+)
+// childPropsSelector使用 2
+childPropsSelector(store.getState(), wrapperProps)
+
 const childPropsSelector = useMemo(() => {
     return createChildSelector(store)
 }, [store])
@@ -879,6 +888,86 @@ function createChildSelector(store) {
 ```
 在默认情况下 selectorFactory = defaultSelectorFactory  
 源文件: `react-redux/src/connect/selectorFactory.js`
+
+```js
+
+// 如果pure为true，则selectorFactory返回的选择器将记住其结果，
+// 如果未更改结果，则connectAdvanced的shouldComponentUpdate可以返回false。
+// 如果为false，则选择器将始终返回新对象，而shouldComponentUpdate将始终返回true。
+
+// 默认的选择器工厂
+export default function finalPropsSelectorFactory(
+  dispatch,
+  { initMapStateToProps, initMapDispatchToProps, initMergeProps, ...options }
+) {
+
+  // initMapStateToProps 可在 connect 中查看 就是通过 match 获取的结果
+  const mapStateToProps = initMapStateToProps(dispatch, options)
+  const mapDispatchToProps = initMapDispatchToProps(dispatch, options)
+  const mergeProps = initMergeProps(dispatch, options)
+
+  // 忽略验证
+
+  const selectorFactory = options.pure
+    ? pureFinalPropsSelectorFactory
+    : impureFinalPropsSelectorFactory
+
+  return selectorFactory(
+    mapStateToProps,
+    mapDispatchToProps,
+    mergeProps,
+    dispatch,
+    options
+  )
+}
+
+```
+
+这里再次进行到下一流程 `initMapStateToProps` , `initMapDispatchToProps` , `initMergeProps`:
+这三个变量的来源是在这里:
+
+```js
+const initMapStateToProps = match(
+  mapStateToProps,
+  mapStateToPropsFactories,
+  'mapStateToProps'
+)
+
+const initMapDispatchToProps = match(
+  mapDispatchToProps,
+  mapDispatchToPropsFactories,
+  'mapDispatchToProps'
+)
+
+const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
+```
+
+而这, 我们又接触到了新的几个参数 `match`, `mapStateToPropsFactories` ,`mapDispatchToPropsFactories` ,`mergePropsFactories`:
+
+##### match
+
+先说说 match, 来看看源码:
+
+```js
+function match(arg, factories, name) {
+  for (let i = factories.length - 1; i >= 0; i--) {
+    const result = factories[i](arg)
+    if (result) return result
+  }
+
+  return (dispatch, options) => {
+    throw new Error(
+      `Invalid value of type ${typeof arg} for ${name} argument when connecting component ${
+        options.wrappedComponentName
+      }.`
+    )
+  }
+}
+```
+这个的作用,我们之前也略微讲过, 就是
+
+
+
 
 ## 其他
 
