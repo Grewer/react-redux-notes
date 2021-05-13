@@ -964,10 +964,69 @@ function match(arg, factories, name) {
   }
 }
 ```
-这个的作用,我们之前也略微讲过, 就是
+这个的作用,我们之前也略微讲过, 就是通过执行 factories 中的函数, 如果有返回值则返回对应的值
 
+而这里我们也需要说下这几个 `Factories`: `defaultMapStateToPropsFactories`, `defaultMapDispatchToPropsFactories`, `defaultMergePropsFactories`
 
+##### defaultMapStateToPropsFactories
 
+```js
+export function whenMapStateToPropsIsFunction(mapStateToProps) {
+  return typeof mapStateToProps === 'function'
+    ? wrapMapToPropsFunc(mapStateToProps, 'mapStateToProps')
+    : undefined
+}
+
+export function whenMapStateToPropsIsMissing(mapStateToProps) {
+  return !mapStateToProps ? wrapMapToPropsConstant(() => ({})) : undefined
+}
+
+export default [whenMapStateToPropsIsFunction, whenMapStateToPropsIsMissing]
+
+```
+
+经过之前我们的 `connect` 用法的介绍:
+```ts
+mapStateToProps?: (state, ownProps?) => Object
+```
+如果 `mapStateToProps` 传的是一个函数, 则用 `wrapMapToPropsFunc` 包裹, 不然就包裹一个空函数
+
+我们再来看下 `wrapMapToPropsFunc`
+```js
+export function wrapMapToPropsFunc(mapToProps, methodName) {
+  return function initProxySelector(dispatch, { displayName }) {
+    const proxy = function mapToPropsProxy(stateOrDispatch, ownProps) {
+      return proxy.dependsOnOwnProps
+        ? proxy.mapToProps(stateOrDispatch, ownProps)
+        : proxy.mapToProps(stateOrDispatch)
+    }
+
+    proxy.dependsOnOwnProps = true
+
+    proxy.mapToProps = function detectFactoryAndVerify(
+      stateOrDispatch,
+      ownProps
+    ) {
+      proxy.mapToProps = mapToProps
+      proxy.dependsOnOwnProps = getDependsOnOwnProps(mapToProps)
+      let props = proxy(stateOrDispatch, ownProps)
+
+      if (typeof props === 'function') {
+        proxy.mapToProps = props
+        proxy.dependsOnOwnProps = getDependsOnOwnProps(props)
+        props = proxy(stateOrDispatch, ownProps)
+      }
+
+      if (process.env.NODE_ENV !== 'production')
+        verifyPlainObject(props, displayName, methodName)
+
+      return props
+    }
+
+    return proxy
+  }
+}
+```
 
 ## 其他
 
