@@ -991,7 +991,7 @@ mapStateToProps?: (state, ownProps?) => Object
 ```
 如果 `mapStateToProps` 传的是一个函数, 则用 `wrapMapToPropsFunc` 包裹, 不然就包裹一个空函数
 
-我们再来看下 `wrapMapToPropsFunc`
+我们再来看下 `wrapMapToPropsFunc`:
 ```js
 export function wrapMapToPropsFunc(mapToProps, methodName) {
   return function initProxySelector(dispatch, { displayName }) {
@@ -1017,16 +1017,42 @@ export function wrapMapToPropsFunc(mapToProps, methodName) {
         props = proxy(stateOrDispatch, ownProps)
       }
 
-      if (process.env.NODE_ENV !== 'production')
-        verifyPlainObject(props, displayName, methodName)
-
+      // 注释验证
+      
       return props
     }
 
     return proxy
   }
 }
+
+// dependsOnOwnProps默认为 true
+// 判断 mapToProps 的dependsOnOwnProps属性是否为空,
+// 如果不为空则, 则返回 Boolean(dependsOnOwnProps), 如果为空, 则比较后返回 布尔值
+function getDependsOnOwnProps(mapToProps) {
+  return mapToProps.dependsOnOwnProps !== null &&
+  mapToProps.dependsOnOwnProps !== undefined
+          ? Boolean(mapToProps.dependsOnOwnProps)
+          : mapToProps.length !== 1
+}
 ```
+
+经历过 match 的遍历, 返回的就是 `initProxySelector`, 这个地方设计得很巧妙
+TODO
+
+总结下流程:  
+我们传递的 `mergeProps` ->  
+经过 `match 函数` ->    
+`match` 函数中的 `wrapMapToPropsFunc` ->  
+现在执行的是 `initProxySelector` ->  
+别名 `initMapStateToProps`  ->  
+通过执行他 获得结果->  
+`mapStateToProps`
+
+
+现在来看下执行流程
+
+
 
 ## 其他
 
