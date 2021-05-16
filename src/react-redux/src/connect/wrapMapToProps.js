@@ -53,7 +53,9 @@ export function getDependsOnOwnProps(mapToProps) {
 // 第一次调用时，请验证第一个结果是一个普通对象，以警告开发人员其mapToProps函数未返回有效结果。
 export function wrapMapToPropsFunc(mapToProps, methodName) {
   return function initProxySelector(dispatch, { displayName }) {
+    console.log('initProxySelector')
     const proxy = function mapToPropsProxy(stateOrDispatch, ownProps) {
+      console.log('proxy 运行', proxy.mapToProps, stateOrDispatch)
       return proxy.dependsOnOwnProps
         ? proxy.mapToProps(stateOrDispatch, ownProps)
         : proxy.mapToProps(stateOrDispatch)
@@ -66,9 +68,13 @@ export function wrapMapToPropsFunc(mapToProps, methodName) {
       stateOrDispatch,
       ownProps
     ) {
+      console.log('detectFactoryAndVerify', mapToProps)
       proxy.mapToProps = mapToProps
       proxy.dependsOnOwnProps = getDependsOnOwnProps(mapToProps)
+      console.log('detectFactoryAndVerify before', mapToProps, stateOrDispatch, proxy.mapToProps)
+
       let props = proxy(stateOrDispatch, ownProps)
+      console.log('detectFactoryAndVerify props', props, mapToProps, stateOrDispatch, proxy)
 
       if (typeof props === 'function') {
         proxy.mapToProps = props

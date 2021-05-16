@@ -889,6 +889,8 @@ function createChildSelector(store) {
 在默认情况下 selectorFactory = defaultSelectorFactory  
 源文件: `react-redux/src/connect/selectorFactory.js`
 
+
+`defaultSelectorFactory` 别名: `finalPropsSelectorFactory`
 ```js
 
 // 如果pure为true，则selectorFactory返回的选择器将记住其结果，
@@ -1038,16 +1040,38 @@ function getDependsOnOwnProps(mapToProps) {
 ```
 
 经历过 match 的遍历, 返回的就是 `initProxySelector`, 这个地方设计得很巧妙
-TODO
+`initProxySelector` 的时候, 传入值: `dispatch, options`, 这里 options 可以暂时忽略 , 这里是有mapToProps的入参 
+他的返回结果也是一个函数, 即 proxy 函数
 
-总结下流程:  
-我们传递的 `mergeProps` ->  
+##### proxy 第一次执行: 
+执行的是 `proxy.mapToProps(stateOrDispatch, ownProps)` 即 `detectFactoryAndVerify`
+覆盖原 `mapToProps`: `proxy.mapToProps = mapToProps` 这里覆盖的就是我们传入的 `mapStateToProps` 函数 / 或者 undefined,  
+`proxy.dependsOnOwnProps` 正常情况下都是返回 true  
+这时候 再次执行 `proxy`:  `let props = proxy(stateOrDispatch, ownProps)`
+转换一下: `mapToProps(stateOrDispatch, ownProps)`, 这里的 `mapToProps` 是我们传入的,  
+之后继续往下走:
+```js
+if (typeof props === 'function') {
+  proxy.mapToProps = props
+  proxy.dependsOnOwnProps = getDependsOnOwnProps(props)
+  props = proxy(stateOrDispatch, ownProps)
+}
+```
+这里是对于返回结果又做了一层判断, 如果返回的是一个函数, 将会覆盖
+
+
+##### 总结下流程:  
+我们传递的 `mapStateToProps` ->  
 经过 `match 函数` ->    
 `match` 函数中的 `wrapMapToPropsFunc` ->  
 现在执行的是 `initProxySelector` ->  
 别名 `initMapStateToProps`  ->  
-通过执行他 获得结果->  
-`mapStateToProps`
+通过执行他 获得结果 `const mapStateToProps = initMapStateToProps(dispatch, options)`  ->  
+通过 `finalPropsSelectorFactory` 的包装 ->    
+别名 `selectorFactory` ->  
+在函数中杯执行 `selectorFactory(store.dispatch, selectorFactoryOptions)` ->  
+返回的值, 作为 `childPropsSelector` 的值 ->  
+在新旧 props 比较时使对此这个值
 
 
 现在来看下执行流程
