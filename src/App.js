@@ -16,8 +16,10 @@ function App(props) {
     );
 }
 
-const mapStateToProps = (state) => {
-    return state
+const mapStateToProps = (_state) => {
+    return (state) => ({
+        value: state.value
+    })
 }
 
 export default connect(mapStateToProps)(App);

@@ -1043,7 +1043,7 @@ function getDependsOnOwnProps(mapToProps) {
 `initProxySelector` 的时候, 传入值: `dispatch, options`, 这里 options 可以暂时忽略 , 这里是有mapToProps的入参 
 他的返回结果也是一个函数, 即 proxy 函数
 
-##### proxy 第一次执行: 
+##### proxy 执行: 
 执行的是 `proxy.mapToProps(stateOrDispatch, ownProps)` 即 `detectFactoryAndVerify`
 覆盖原 `mapToProps`: `proxy.mapToProps = mapToProps` 这里覆盖的就是我们传入的 `mapStateToProps` 函数 / 或者 undefined,  
 `proxy.dependsOnOwnProps` 正常情况下都是返回 true  
@@ -1056,8 +1056,68 @@ if (typeof props === 'function') {
   proxy.dependsOnOwnProps = getDependsOnOwnProps(props)
   props = proxy(stateOrDispatch, ownProps)
 }
+
 ```
 这里是对于返回结果又做了一层判断, 如果返回的是一个函数, 将会覆盖
+因为这个判断, 所以我们可以这样传 `mapStateToProps`:
+```js
+const mapStateToProps = (_state) => {
+  return (state) => ({
+    value: state.value
+  })
+}
+```
+所以说查看源码, 是可以发现一些新的用法的, 虽然这样的写法不是很提倡, 暂时没什么作用, 但为后面他的拓展性做了很充足的准备
+
+
+
+##### defaultMapDispatchToPropsFactories
+这个参数是和 `defaultMapStateToPropsFactories` 类似了
+而且因为 `mapDispatchToProps` 可以传入 `Object`, 在 `match` 上又会多一层判断
+这里涉及到的代码和 `defaultMapStateToPropsFactories` 90% 都是类似了, 所以跳过
+
+##### defaultMergePropsFactories
+同上, 基本类似, 也不再赘述
+
+
+##### selectorFactory
+
+到这里继续讲 `selectorFactory`, 一般来说 `selectorFactory` 运行的都是此函数 `pureFinalPropsSelectorFactory`,  
+代码同样是在 `react-redux/src/connect/selectorFactory.js` 此文件夹下的  
+入参:
+```js
+  mapStateToProps,
+  mapDispatchToProps,
+  mergeProps,
+  dispatch,
+  { areStatesEqual, areOwnPropsEqual, areStatePropsEqual }
+```
+在此函数体内, 他又定义了几个函数, 最关键是这个:
+```js
+function handleSubsequentCalls(nextState, nextOwnProps) {
+  const propsChanged = !areOwnPropsEqual(nextOwnProps, ownProps)
+  const stateChanged = !areStatesEqual(nextState, state)
+  state = nextState
+  ownProps = nextOwnProps
+
+  if (propsChanged && stateChanged) return handleNewPropsAndNewState()
+  if (propsChanged) return handleNewProps()
+  if (stateChanged) return handleNewState()
+  return mergedProps
+}
+
+return function pureFinalPropsSelector(nextState, nextOwnProps) {
+    // 表示是否已经运行过一次, 如果没有,则使用 handleFirstCall 初始化
+    // 否则使用 handleSubsequentCalls
+  return hasRunAtLeastOnce
+          ? handleSubsequentCalls(nextState, nextOwnProps)
+          : handleFirstCall(nextState, nextOwnProps)
+}
+```
+
+这里的比较方法`areOwnPropsEqual`,`areStatesEqual` 默认都是 `shallowEqual`
+(来自文件: react-redux/src/utils/shallowEqual.js), 算是一个浅层比较  
+通过比较 新旧 props 和 state, 如果发生变化, 则进行对应的更新最终返回合并后的值 
 
 
 ##### 总结下流程:  
