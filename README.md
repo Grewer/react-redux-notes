@@ -1169,6 +1169,8 @@ return function pureFinalPropsSelector(nextState, nextOwnProps) {
    在新旧 props 比较时(subscribeUpdates中)使对此这个值
 
 
+本文记录:
+https://github.com/Grewer/react-redux-notes
 
 参考文档:
 https://react-redux.js.org/introduction/getting-started
