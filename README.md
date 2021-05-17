@@ -1,4 +1,4 @@
-# react-redux 源码阅读笔记
+# react-redux 源码浅析
 
 > react-redux 版本号 7.2.3
 
@@ -88,8 +88,18 @@ export interface Store<S = any, A extends Action = AnyAction> {
 ## provider
 
 ### provider 的使用
+一般来说, 我们会在项目入口处加上 `Provider`, 如 index.js:
+```js
+ReactDOM.render(
+    <Provider store={store}>
+        <App/>
+    </Provider>,
+    document.getElementById('root')
+);
+```
+`Provider` 接受一个 `store` 作为存储, 在 `<App/>` 中, 任意组件都能获取到 `store` 中的参数和方法
 
-TODO
+此外我们还能 提供一个 `context` 给他, 但是一般不建议这样做, 如果不够熟悉, 会出现很多未知问题
 
 ### 文件源码入口
 
@@ -864,9 +874,9 @@ function subscribeUpdates(
 
 从这几行可以看出来, store 或者 props 的变化都会导致此包装组件的再渲染, 选渲染中又加上了判断, 可以控制子组件是否真的能够渲染
 
-### 补漏
+## 补漏
 
-#### selectorFactory
+### selectorFactory
 这函数是获取 store 的, 之前使用的地方
 
 ```js
@@ -946,7 +956,7 @@ const initMergeProps = match(mergeProps, mergePropsFactories, 'mergeProps')
 
 而这, 我们又接触到了新的几个参数 `match`, `mapStateToPropsFactories` ,`mapDispatchToPropsFactories` ,`mergePropsFactories`:
 
-##### match
+#### match
 
 先说说 match, 来看看源码:
 
@@ -970,7 +980,7 @@ function match(arg, factories, name) {
 
 而这里我们也需要说下这几个 `Factories`: `defaultMapStateToPropsFactories`, `defaultMapDispatchToPropsFactories`, `defaultMergePropsFactories`
 
-##### defaultMapStateToPropsFactories
+#### defaultMapStateToPropsFactories
 
 ```js
 export function whenMapStateToPropsIsFunction(mapStateToProps) {
@@ -1043,7 +1053,7 @@ function getDependsOnOwnProps(mapToProps) {
 `initProxySelector` 的时候, 传入值: `dispatch, options`, 这里 options 可以暂时忽略 , 这里是有mapToProps的入参 
 他的返回结果也是一个函数, 即 proxy 函数
 
-##### proxy 执行: 
+#### proxy 执行: 
 执行的是 `proxy.mapToProps(stateOrDispatch, ownProps)` 即 `detectFactoryAndVerify`
 覆盖原 `mapToProps`: `proxy.mapToProps = mapToProps` 这里覆盖的就是我们传入的 `mapStateToProps` 函数 / 或者 undefined,  
 `proxy.dependsOnOwnProps` 正常情况下都是返回 true  
@@ -1071,16 +1081,16 @@ const mapStateToProps = (_state) => {
 
 
 
-##### defaultMapDispatchToPropsFactories
+#### defaultMapDispatchToPropsFactories
 这个参数是和 `defaultMapStateToPropsFactories` 类似了
 而且因为 `mapDispatchToProps` 可以传入 `Object`, 在 `match` 上又会多一层判断
 这里涉及到的代码和 `defaultMapStateToPropsFactories` 90% 都是类似了, 所以跳过
 
-##### defaultMergePropsFactories
+#### defaultMergePropsFactories
 同上, 基本类似, 也不再赘述
 
 
-##### selectorFactory
+#### selectorFactory
 
 到这里继续讲 `selectorFactory`, 一般来说 `selectorFactory` 运行的都是此函数 `pureFinalPropsSelectorFactory`,  
 代码同样是在 `react-redux/src/connect/selectorFactory.js` 此文件夹下的  
@@ -1120,7 +1130,7 @@ return function pureFinalPropsSelector(nextState, nextOwnProps) {
 通过比较 新旧 props 和 state, 如果发生变化, 则进行对应的更新最终返回合并后的值 
 
 
-##### 总结下流程:  
+#### 总结下流程:  
 我们传递的 `mapStateToProps` ->  
 经过 `match 函数` ->    
 `match` 函数中的 `wrapMapToPropsFunc` ->  
@@ -1131,50 +1141,34 @@ return function pureFinalPropsSelector(nextState, nextOwnProps) {
 别名 `selectorFactory` ->  
 在函数中杯执行 `selectorFactory(store.dispatch, selectorFactoryOptions)` ->  
 返回的值, 作为 `childPropsSelector` 的值 ->  
-在新旧 props 比较时使对此这个值
-
-
-现在来看下执行流程
+在新旧 props 比较时(subscribeUpdates中)使对此这个值
 
 
 
-## 其他
-
-## 入口文件 src/index.js
-
-```
-//...
-setBatch(batch)
-
-export {
-//...
-}
-```
-
-基本上都是把 export 的方法引入, 统一再这个文件导出, 但是其中也执行了一个函数: `setBatch(batch)`
-
-#### setBatch
-
-`setBatch` 来源于`./utils/batch` 文件:
-
-```
-// Default to a dummy "batch" implementation that just runs the callback
-function defaultNoopBatch(callback) {
-callback()
-}
-
-let batch = defaultNoopBatch
-
-// Allow injecting another batching function later
-export const setBatch = (newBatch) => (batch = newBatch)
-
-// Supply a getter just to skip dealing with ESM bindings
-export const getBatch = () => batch
-```
-
-简单的来说就是, 此文件中存储了一个变量 batch, 对外输出了 2 个函数, 设置此变量和获取此变量
 
 ## 结语
+本文较为简单的解析了一下 `react-redux` 这个常用库, 总结了几种代码运行流程
+
+1. store 数据流向
+  store -> Provider -> connect -> props
+   
+2. connect 执行函数流程
+   `createConnect()` -> `connect()` -> `connectHOC()` = `connectAdvanced()` -> `wrapWithConnect(Component)`
+   
+3. mapStateToProps执行流程
+   我们传递的 `mapStateToProps` ->  
+   经过 `match 函数` ->    
+   `match` 函数中的 `wrapMapToPropsFunc` ->  
+   现在执行的是 `initProxySelector` ->  
+   别名 `initMapStateToProps`  ->  
+   通过执行他 获得结果 `const mapStateToProps = initMapStateToProps(dispatch, options)`  ->  
+   通过 `finalPropsSelectorFactory` 的包装 ->    
+   别名 `selectorFactory` ->  
+   在函数中杯执行 `selectorFactory(store.dispatch, selectorFactoryOptions)` ->  
+   返回的值, 作为 `childPropsSelector` 的值 ->  
+   在新旧 props 比较时(subscribeUpdates中)使对此这个值
+
+
 
 参考文档:
 https://react-redux.js.org/introduction/getting-started
