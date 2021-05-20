@@ -1,6 +1,6 @@
 import {createStore} from 'redux'
 
-function counterReducer(state = {value: 0}, action) {
+function counterReducer(state, action) {
     switch (action.type) {
         case 'counter/incremented':
             return {value: state.value + 1}
@@ -12,6 +12,9 @@ function counterReducer(state = {value: 0}, action) {
 }
 
 
-let store = createStore(counterReducer)
+let store = createStore(counterReducer, {
+    value: 12345
+})
+
 
 export default store
