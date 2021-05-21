@@ -16,5 +16,12 @@ let store = createStore(counterReducer, {
     value: 12345
 })
 
+const unsubscribe = store.subscribe(() => {
+    console.log('listener run')
+    const current = store.getState()
+    if (current.value === 12350) {
+        unsubscribe()
+    }
+})
 
 export default store

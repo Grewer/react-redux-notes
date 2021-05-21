@@ -58,8 +58,33 @@ let store = createStore(counterReducer, {
 ## store
 `createStore` 返回的当然是一个 `store`, 他有自己的 `api`
 
+### getState
+返回应用程序的当前状态树
+
+### dispatch(action)
+这个其实不用我多说, 会 `redux` 的都应该知道这个
+```js
+store.dispatch({type: 'counter/incremented'})
+```
+
+### subscribe(listener)
+添加一个监听器, 每当 `action` `dispatch` 的时候, 都会调用 `listener`, 在 `listener` 中可以使用 `getState` 来获取当前的状态树
+
+```js
+const unsubscribe = store.subscribe(() => {
+   console.log('listener run')
+   const current = store.getState()
+   if (current.value === 12350) {
+      unsubscribe()
+   }
+})
+```
+展示一个场景, 监听事件, 当达到某个条件之后, 解除监听事件
 
 
+### replaceReducer(nextReducer)
+
+使用一个 `reducer` 替换当前的 reducer,对于 `reducers` 实现动态加载,也可以为 `Redux` 实现热重载机制
 
 
 ## combineReducers
