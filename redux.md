@@ -86,21 +86,49 @@ const unsubscribe = store.subscribe(() => {
 
 使用一个 `reducer` 替换当前的 reducer,对于 `reducers` 实现动态加载,也可以为 `Redux` 实现热重载机制
 
+### 源码解析
+
+`createStore` 文件是在 `redux/src/createStore.js` 中, 他接受的参数就是上面我们说的那三个,
+ 返回的也就是 `store`
+
+首先是一段参数的判断, 以及 `enhancer` 的返回
+
+```js
+// 为了适配 createStore(reducer, enhancer) 的情况
+if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
+    enhancer = preloadedState
+    preloadedState = undefined
+}
+
+if (typeof enhancer !== 'undefined') {
+    if (typeof enhancer !== 'function') {
+        throw new Error('Expected the enhancer to be a function.')
+    }
+    // enhancer 的使用场景
+    return enhancer(createStore)(reducer, preloadedState)
+}
+```
+
 
 ## combineReducers
 
 ### 使用
 
+### 源码解析
+
 ## applyMiddleware
 
 ### 使用
+### 源码解析
 
 ## bindActionCreators
 ### 使用
+
+### 源码解析
 ## compose
 
 ### 使用
-
+### 源码解析
 
 ## 总结
 
