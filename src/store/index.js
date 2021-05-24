@@ -1,4 +1,4 @@
-import {createStore} from 'redux'
+import {createStore} from '../redux/src/index'
 
 function counterReducer(state, action) {
     switch (action.type) {
@@ -15,6 +15,8 @@ function counterReducer(state, action) {
 let store = createStore(counterReducer, {
     value: 12345
 })
+
+console.log(store)
 
 const unsubscribe = store.subscribe(() => {
     console.log('listener run')
