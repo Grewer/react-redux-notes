@@ -272,7 +272,6 @@ export default function createStore(reducer, preloadedState, enhancer) {
         const unsubscribe = outerSubscribe(observeState)
         return { unsubscribe }
       },
-
       [$$observable]() {
         return this
       }

@@ -186,6 +186,107 @@ function subscribe(listener) {
 }
 ```
 
+#### store.dispatch
+
+```js
+  function dispatch(action) {
+    // 省略了 action 的 错误抛出
+    // 总结:  action  必须是一个 Object  且 action.type 必须有值存在
+
+    // 如果当前正在 isDispatching 则抛出 错误(一般来说不存在
+
+    try {
+        isDispatching = true
+        // 执行 reducer, 需要注意的是 currentReducer 不能为异步函数
+        currentState = currentReducer(currentState, action)
+    } finally {
+        isDispatching = false
+    }
+
+    //  将 nextListeners 赋值给 currentListeners 执行 nextListeners 里面的监听器
+    const listeners = (currentListeners = nextListeners)
+    for (let i = 0; i < listeners.length; i++) {
+        const listener = listeners[i]
+        listener()
+    }
+
+    // 返回 action
+    return action
+}
+```
+
+#### store.replaceReducer
+
+```js
+function replaceReducer(nextReducer) {
+    // 如果 nextReducer 不是函数则抛出错误
+
+    // 直接替换
+    currentReducer = nextReducer
+
+    // 类似 ActionTypes.INIT.  替换值
+    dispatch({type: ActionTypes.REPLACE})
+}
+```
+
+#### store.observable
+
+还有一个额外的 `observable` 对象:
+
+```js
+// 一个 Symbol.observable 的 polyfill
+import $$observable from 'symbol-observable'
+
+function observable() {
+    // subscribe 就是 store.subscribe
+    const outerSubscribe = subscribe
+    return {
+        subscribe(observer) {
+            // 如果 observer 不是对象或者为 null 则抛出错误
+
+            function observeState() {
+                if (observer.next) {
+                    // next 的入参为 当然 reducer 的值
+                    observer.next(getState())
+                }
+            }
+
+            observeState()
+
+            // 添加了监听
+            const unsubscribe = outerSubscribe(observeState)
+            return {unsubscribe}
+        },
+
+        // 获取到当前 对象, $$observable 值是一个 symbol
+        [$$observable]() {
+            return this
+        }
+    }
+}
+```
+
+这里使用了 `tc39` 里未上线的标准代码 `Symbol.observable`, 如果你使用或者了解过 `rxjs`, 那么这个对于你来说就是很简单的, 如果不熟悉,
+可以看看这篇文章: https://juejin.cn/post/6844903714998730766
+
+#### 剩余代码
+
+```js
+function createStore() {
+    // 初始化了下值
+    dispatch({type: ActionTypes.INIT})
+
+    // 返回
+    return {
+        dispatch,
+        subscribe,
+        getState,
+        replaceReducer,
+        [$$observable]: observable
+    }
+}
+```
+
 ## combineReducers
 
 ### 使用
@@ -216,3 +317,4 @@ function subscribe(listener) {
 
 - https://redux.js.org/
 - https://github.com/reduxjs/redux
+- https://juejin.cn/post/6844903714998730766
