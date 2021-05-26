@@ -273,6 +273,8 @@ function observable() {
 
 ```js
 function createStore() {
+    // 省略
+
     // 初始化了下值
     dispatch({type: ActionTypes.INIT})
 
@@ -291,7 +293,127 @@ function createStore() {
 
 ### 使用
 
+```js
+// 可以接受多个 reducer, 实现一种 module 的功能
+rootReducer = combineReducers({potato: potatoReducer, tomato: tomatoReducer})
+
+
+// 返回值
+{
+    potato: {
+        // 某些属性
+    }
+,
+    tomato: {
+        // 某些属性
+    }
+}
+
+
+const store = createStore(rootReducer, {
+    potato: {
+        // 初始值
+    }
+})
+```
+
+有一点需要注意的是, reducer 都是需要默认值的,如:
+
+```js
+function counterReducer(state = {value: 0}, action) {
+    //...
+}
+```
+
 ### 源码解析
+
+#### combineReducers
+
+先看 `combineReducers` 执行之后产生了什么
+
+```js
+function combineReducers(reducers) {
+    // 第一步是获取 key, 他是一个数组
+    const reducerKeys = Object.keys(reducers)
+    const finalReducers = {}
+   
+   // 遍历 reducers, 赋值到 finalReducers 中, 确保 reducer 是一个函数, 不是函数则过滤
+    for (let i = 0; i < reducerKeys.length; i++) {
+        const key = reducerKeys[i]
+        
+       // 省略 reducers[key] 如果是 undefined 抛出错误
+
+        if (typeof reducers[key] === 'function') {
+            finalReducers[key] = reducers[key]
+        }
+    }
+    
+    // finalReducerKeys 一般来说是和 reducerKeys 相同的
+    const finalReducerKeys = Object.keys(finalReducers)
+   
+    //定义了两个遍历
+    let unexpectedKeyCache
+    let shapeAssertionError
+   
+    try {
+        // 此函数后面会详细讲述
+        assertReducerShape(finalReducers)
+    } catch (e) {
+        shapeAssertionError = e
+    }
+
+    //...
+}
+
+```
+
+在看他又返回了什么(记住结果必然也是一个 store 对象)
+
+```js
+function combineReducers(reducers) {
+
+    //...
+    return function combination(state = {}, action) {
+        if (shapeAssertionError) {
+            throw shapeAssertionError
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+            const warningMessage = getUnexpectedStateShapeWarningMessage(
+                state,
+                finalReducers,
+                action,
+                unexpectedKeyCache
+            )
+            if (warningMessage) {
+                warning(warningMessage)
+            }
+        }
+
+        let hasChanged = false
+        const nextState = {}
+        for (let i = 0; i < finalReducerKeys.length; i++) {
+            const key = finalReducerKeys[i]
+            const reducer = finalReducers[key]
+            const previousStateForKey = state[key]
+            const nextStateForKey = reducer(previousStateForKey, action)
+            if (typeof nextStateForKey === 'undefined') {
+                const errorMessage = getUndefinedStateErrorMessage(key, action)
+                throw new Error(errorMessage)
+            }
+            nextState[key] = nextStateForKey
+            hasChanged = hasChanged || nextStateForKey !== previousStateForKey
+        }
+        hasChanged =
+            hasChanged || finalReducerKeys.length !== Object.keys(state).length
+        return hasChanged ? nextState : state
+    }
+}
+```
+
+#### getUnexpectedStateShapeWarningMessage
+
+#### assertReducerShape
 
 ## applyMiddleware
 
@@ -317,4 +439,3 @@ function createStore() {
 
 - https://redux.js.org/
 - https://github.com/reduxjs/redux
-- https://juejin.cn/post/6844903714998730766
