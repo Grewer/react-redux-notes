@@ -147,6 +147,8 @@ export default function combineReducers(reducers) {
       throw shapeAssertionError
     }
 
+    console.log('run123', state, action)
+
     if (process.env.NODE_ENV !== 'production') {
       const warningMessage = getUnexpectedStateShapeWarningMessage(
         state,

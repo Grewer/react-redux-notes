@@ -336,67 +336,66 @@ function combineReducers(reducers) {
     // 第一步是获取 key, 他是一个数组
     const reducerKeys = Object.keys(reducers)
     const finalReducers = {}
-   
-   // 遍历 reducers, 赋值到 finalReducers 中, 确保 reducer 是一个函数, 不是函数则过滤
+
+    // 遍历 reducers, 赋值到 finalReducers 中, 确保 reducer 是一个函数, 不是函数则过滤
     for (let i = 0; i < reducerKeys.length; i++) {
         const key = reducerKeys[i]
-        
-       // 省略 reducers[key] 如果是 undefined 抛出错误
+
+        // 省略 reducers[key] 如果是 undefined 抛出错误
 
         if (typeof reducers[key] === 'function') {
             finalReducers[key] = reducers[key]
         }
     }
-    
+
     // finalReducerKeys 一般来说是和 reducerKeys 相同的
     const finalReducerKeys = Object.keys(finalReducers)
-   
+
     //定义了两个遍历
     let unexpectedKeyCache
     let shapeAssertionError
-   
+
     try {
         // 此函数后面会详细讲述
+        // 答题作用就是确认 finalReducers 中都是有初始值的
         assertReducerShape(finalReducers)
     } catch (e) {
         shapeAssertionError = e
     }
-
     //...
 }
 
 ```
 
-在看他又返回了什么(记住结果必然也是一个 store 对象)
+再看他又返回了什么(记住结果必然也是一个 reducer)
 
 ```js
 function combineReducers(reducers) {
 
     //...
+    
+   
     return function combination(state = {}, action) {
+        // 如果 assertReducerShape 出错则抛出错误
         if (shapeAssertionError) {
             throw shapeAssertionError
         }
 
-        if (process.env.NODE_ENV !== 'production') {
-            const warningMessage = getUnexpectedStateShapeWarningMessage(
-                state,
-                finalReducers,
-                action,
-                unexpectedKeyCache
-            )
-            if (warningMessage) {
-                warning(warningMessage)
-            }
-        }
+        // 忽略非 production 代码
 
+        // 预先定义一些变量
         let hasChanged = false
         const nextState = {}
+
+        // 循环 finalReducerKeys 
         for (let i = 0; i < finalReducerKeys.length; i++) {
             const key = finalReducerKeys[i]
             const reducer = finalReducers[key]
-            const previousStateForKey = state[key]
-            const nextStateForKey = reducer(previousStateForKey, action)
+           
+            const previousStateForKey = state[key] // 这是一开始的值
+            const nextStateForKey = reducer(previousStateForKey, action) // 通过 reducer 再次生成值
+           
+           
             if (typeof nextStateForKey === 'undefined') {
                 const errorMessage = getUndefinedStateErrorMessage(key, action)
                 throw new Error(errorMessage)
@@ -411,9 +410,35 @@ function combineReducers(reducers) {
 }
 ```
 
-#### getUnexpectedStateShapeWarningMessage
-
 #### assertReducerShape
+
+```js
+function assertReducerShape(reducers) {
+    Object.keys(reducers).forEach(key => {
+        // 遍历参数里的 reducer
+        const reducer = reducers[key]
+
+        //执行初始操作 产生初始值都有初始值
+        const initialState = reducer(undefined, {type: ActionTypes.INIT})
+
+        //...   如果 initialState 是 undefined 则抛出错误
+
+
+        // 如果 reducer 执行未知操作  返回的是 undefined 则抛出错误
+        // 情景: 当前 reducer 使用了 ActionTypes.INIT 来产生值, 这能够通过上一步
+        // 但在这一步就会被检测出来
+        if (
+            typeof reducer(undefined, {
+                type: ActionTypes.PROBE_UNKNOWN_ACTION()
+            }) === 'undefined'
+        ) {
+            //... 抛出错误
+        }
+    })
+}
+```
+
+这里我们可以知道一点, 所有 reducer 我们都必须要有一个初始值, 而且他不能是 undefined, 可以是 null
 
 ## applyMiddleware
 

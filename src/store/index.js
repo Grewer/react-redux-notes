@@ -12,7 +12,7 @@ function counterReducer(state = {value: 0}, action) {
     }
 }
 
-function todoReducer(state = [], action) {
+function todoReducer(state = {list: []}, action) {
     switch (action.type) {
         case 'todo/add':
             return {list: state.list.concat(action.payload)}
