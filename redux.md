@@ -373,8 +373,8 @@ function combineReducers(reducers) {
 function combineReducers(reducers) {
 
     //...
-    
-   
+
+
     return function combination(state = {}, action) {
         // 如果 assertReducerShape 出错则抛出错误
         if (shapeAssertionError) {
@@ -391,24 +391,32 @@ function combineReducers(reducers) {
         for (let i = 0; i < finalReducerKeys.length; i++) {
             const key = finalReducerKeys[i]
             const reducer = finalReducers[key]
-           
+
             const previousStateForKey = state[key] // 这是一开始的值
             const nextStateForKey = reducer(previousStateForKey, action) // 通过 reducer 再次生成值
-           
-           
-            if (typeof nextStateForKey === 'undefined') {
-                const errorMessage = getUndefinedStateErrorMessage(key, action)
-                throw new Error(errorMessage)
-            }
+
+            // 如果 nextStateForKey === undefined 则再次抛出异常
+
+            // 给 nextState 赋值
             nextState[key] = nextStateForKey
+
+            // 判断是否改变 (初始值是 false)  判断简单的使用 !== 来比较
+            // 如果已经为 true   就一直为 true 了
             hasChanged = hasChanged || nextStateForKey !== previousStateForKey
         }
+
+        // 循环后再次对 true 做出判断
+        // 是否少了 reducer 而造成误判
         hasChanged =
             hasChanged || finalReducerKeys.length !== Object.keys(state).length
+
+        // 如果改变了 返回新值, 否则返回旧值
         return hasChanged ? nextState : state
     }
 }
 ```
+
+`combineReducers` 基本就是上述两个函数的结合, 通过循环遍历所有的 reducer 计算出值
 
 #### assertReducerShape
 
