@@ -522,6 +522,7 @@ foo 打印:
 ```js
 
 function logger({getState}) {
+    // next 就是真正的 store.dispatch
     return next => action => {
         console.log('will dispatch', action)
 
@@ -540,6 +541,54 @@ const store = createStore(rootReducer, {
 ```
 
 ### 源码解析
+
+```js
+default
+
+function applyMiddleware(...middlewares) {
+    return createStore => (...args) => {
+        // 因为使用了 enhancer 参数, 他的内部没有 createStore 的东西, 所以这里需要重新 createStore
+        const store = createStore(...args)
+        let dispatch = () => {
+            // 在中间件中 不允许使用 dispatch
+            throw new Error(
+                // 省略报错...
+            )
+        }
+
+        // 这是要传递的参数
+        const middlewareAPI = {
+            getState: store.getState,
+            dispatch: (...args) => dispatch(...args)
+        }
+
+        // 重新 map 所有 middlewares 返回需要的结果
+        const chain = middlewares.map(middleware => middleware(middlewareAPI))
+
+        // 这里就是我们上面的 compose 相关的代码, 返回的结果 再次执行 得到真正的 dispatch
+        dispatch = compose(...chain)(store.dispatch)
+
+        // 返回 store 和 dispatch
+        return {
+            ...store,
+            dispatch
+        }
+    }
+}
+```
+
+这里我们需要重新捋一捋函数的执行, 中间件以上述的 `logger` 为例子
+
+`applyMiddleware(logger)` -> 返回的是一个函数`(createStore) => (...args) => {/*省略*/}` 我把他记为中间件函数 1  
+也就是说 `applyMiddleware(logger)` === `(createStore) => (...args) => {/*省略*/}`  
+
+这个函数将在 `createStore` 中使用 `enhancer(createStore)(reducer, preloadedState)` 这里的 `enhancer` 就是中间件函数 1
+通过 `createStore` 的执行我们可以发现
+`store` === `createStore(reducer, preloadedState, enhancer)` === `enhancer(createStore)(reducer, preloadedState)`
+=== `applyMiddleware(logger)(createStore)(reducer, preloadedState)` === `((createStore) => (...args) => {/*省略*/})(createStore)(reducer, preloadedState)`
+=== 中间件函数 1 中的`{/*省略*/}` 返回结果
+通过这一层的推论我们可以得出  `store`  === 中间件函数 1中的 `{/*省略*/}`  返回结果
+
 
 ## bindActionCreators
 
