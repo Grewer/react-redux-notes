@@ -1,5 +1,5 @@
 import {createStore} from '../redux/src/index'
-import {combineReducers} from "../redux/src";
+import {applyMiddleware, combineReducers} from "../redux/src";
 
 function counterReducer(state = {value: 0}, action) {
     switch (action.type) {
@@ -29,9 +29,21 @@ const rootReducer = combineReducers({
     counter: counterReducer
 })
 
+function logger({getState}) {
+    return next => action => {
+        console.log('will dispatch', action)
+
+        const returnValue = next(action)
+
+        console.log('state after dispatch', getState())
+
+        return returnValue
+    }
+}
+
 let store = createStore(rootReducer, {
     counter: {value: 12345}
-})
+}, applyMiddleware(logger))
 
 console.log(store)
 

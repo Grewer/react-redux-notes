@@ -448,19 +448,100 @@ function assertReducerShape(reducers) {
 
 这里我们可以知道一点, 所有 reducer 我们都必须要有一个初始值, 而且他不能是 undefined, 可以是 null
 
+## compose
+
+这里需要先讲 compose 的使用 才能顺带过渡到下面
+
+### 使用
+
+就如他的名字, 是用来组合函数的, 接受刀哥函数, 返回执行的最终函数:
+
+```js
+// 这里常用来 链接多个中间件
+const store = createStore(
+    reducer,
+    compose(applyMiddleware(thunk), DevTools.instrument())
+)
+```
+
+### 源码解析
+
+他的源码也很简单:
+
+```js
+function compose(...funcs) {
+    if (funcs.length === 0) {
+        return arg => arg
+    }
+
+    if (funcs.length === 1) {
+        return funcs[0]
+    }
+    // 上面都是 控制, 参数数量为 0 和 1 的情况
+
+
+    // 这里是重点, 将循环接收到的函数数组
+    return funcs.reduce((a, b) => (...args) => a(b(...args)))
+}
+```
+
+我们将 `reduce` 的运行再度装饰下:
+
+```js
+// reduce 中没有初始值的时候, 第一个 `prevValue` 是取  `funcs[0]` 的值
+
+funcs.reduce((prevValue, currentFunc) => (...args) => prevValue(currentFunc(...args)))
+```
+
+reducer 返回的就是 这样一个函数 `(...args) => prevValue(currentFunc(...args))`, 一层一层嵌套成一个函数
+
+举一个简单的输入例子:
+
+```js
+var foo = compose(val => val + 10, () => 1)
+```
+
+foo 打印:
+
+```js
+(...args) => a(b(...args))
+```
+
+执行 `foo()` , 返回 11
+
 ## applyMiddleware
 
 ### 使用
 
+`applyMiddleware` 是使用在 `createStore` 中的 `enhancer` 参数来增强 `redux` 的作用
+
+可兼容多种三方插件, 例如 `redux-thunk`, `redux-promise`, `redux-saga` 等等
+
+这里使用官网的一个例子作为展示:
+
+```js
+
+function logger({getState}) {
+    return next => action => {
+        console.log('will dispatch', action)
+
+        const returnValue = next(action)
+
+        console.log('state after dispatch', getState())
+
+        return returnValue
+    }
+}
+
+const store = createStore(rootReducer, {
+    counter: {value: 12345}
+}, applyMiddleware(logger))
+
+```
+
 ### 源码解析
 
 ## bindActionCreators
-
-### 使用
-
-### 源码解析
-
-## compose
 
 ### 使用
 

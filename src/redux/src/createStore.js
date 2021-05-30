@@ -248,6 +248,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
    */
   function observable() {
     const outerSubscribe = subscribe
+    // alert('run')
     return {
       /**
        * The minimal observable subscription method.
