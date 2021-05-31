@@ -580,23 +580,137 @@ function applyMiddleware(...middlewares) {
 这里我们需要重新捋一捋函数的执行, 中间件以上述的 `logger` 为例子
 
 `applyMiddleware(logger)` -> 返回的是一个函数`(createStore) => (...args) => {/*省略*/}` 我把他记为中间件函数 1  
-也就是说 `applyMiddleware(logger)` === `(createStore) => (...args) => {/*省略*/}`  
+也就是说 `applyMiddleware(logger)` === `(createStore) => (...args) => {/*省略*/}`
 
-这个函数将在 `createStore` 中使用 `enhancer(createStore)(reducer, preloadedState)` 这里的 `enhancer` 就是中间件函数 1
-通过 `createStore` 的执行我们可以发现
+这个函数将在 `createStore` 中使用 `enhancer(createStore)(reducer, preloadedState)` 这里的 `enhancer` 就是中间件函数 1 通过 `createStore`
+的执行我们可以发现
 `store` === `createStore(reducer, preloadedState, enhancer)` === `enhancer(createStore)(reducer, preloadedState)`
-=== `applyMiddleware(logger)(createStore)(reducer, preloadedState)` === `((createStore) => (...args) => {/*省略*/})(createStore)(reducer, preloadedState)`
-=== 中间件函数 1 中的`{/*省略*/}` 返回结果
-通过这一层的推论我们可以得出  `store`  === 中间件函数 1中的 `{/*省略*/}`  返回结果
-
+=== `applyMiddleware(logger)(createStore)(reducer, preloadedState)`
+=== `((createStore) => (...args) => {/*省略*/})(createStore)(reducer, preloadedState)`
+=== 中间件函数 1 中的`{/*省略*/}` 返回结果 通过这一层的推论我们可以得出  `store`  === 中间件函数 1中的 `{/*省略*/}`  返回结果
 
 ## bindActionCreators
 
 ### 使用
 
+这个 API 主要是用来方便 `dispatch` 的 他接受 2 个参数 , 第一个是对象或函数, 第二个就是 dispatch 返回值的类型很第一个参数相同
+
+首先我们要定义创建 `action` 的函数
+
+```js
+function increment(value) {
+    return {
+        type: 'counter/incremented',
+        payload: value
+    }
+}
+
+function decrement(value) {
+    return {
+        type: 'counter/decremented',
+        payload: value
+    }
+}
+```
+
+使用情况 1:
+
+```jsx
+function App(props) {
+    const {dispatch} = props
+
+    // 因为在 hooks 中使用 加上了 useMemo
+    const fn = useMemo(() => bindActionCreators(increment, dispatch), [dispatch])
+
+    return (
+        <div className="App">
+            <div>
+                val: {props.value}
+            </div>
+            <button onClick={() => {
+                fn(100)
+            }}>plus
+            </button>
+        </div>
+    );
+}
+
+```
+
+使用情况 2:
+
+```jsx
+function App(props) {
+    const {dispatch} = props
+
+    const fn = useMemo(() => bindActionCreators({
+        increment,
+        decrement
+    }, dispatch), [dispatch])
+
+
+    // 如果想用 decrement 也是这样调用 fn.decrement(100)
+    return (
+        <div className="App">
+            <div>
+                val: {props.value}
+            </div>
+            <button onClick={() => {
+                fn.increment(100)
+            }}>plus
+            </button>
+        </div>
+    );
+}
+```
+
 ### 源码解析
 
+```js
+function bindActionCreator(actionCreator, dispatch) {
+    return function () {
+        // 执行 dispatch(actionCreator()) === dispatch({type:''}) 
+        return dispatch(actionCreator.apply(this, arguments))
+    }
+}
+
+function bindActionCreators(actionCreators, dispatch) {
+    if (typeof actionCreators === 'function') {
+        // 如果是函数直接执行 bindActionCreator
+        return bindActionCreator(actionCreators, dispatch)
+    }
+
+    if (typeof actionCreators !== 'object' || actionCreators === null) {
+        throw new Error(/*省略*/)
+    }
+
+    // 定义变量
+    const boundActionCreators = {}
+    
+    // 因为是对象 循环遍历, 但是 for in 效率太差
+    for (const key in actionCreators) {
+        const actionCreator = actionCreators[key]
+       
+       // 过滤
+        if (typeof actionCreator === 'function') {
+            // 和函数同样 执行 bindActionCreator 并且赋值到 boundActionCreators 中
+            boundActionCreators[key] = bindActionCreator(actionCreator, dispatch)
+        }
+    }
+    return boundActionCreators
+}
+
+```
+
+`bindActionCreators` 的源码相对简单一点, 理解起来相对也容易很多
+
 ## 总结
+
+redux 中设计的很多地方都是很巧妙的,并且短小精悍, 值得大家作为首次源码阅读的选择
+
+如果我讲的有什么问题, 还望不吝指教
+
+本文代码仓库: https://github.com/Grewer/react-redux-notes
 
 参考文档:
 

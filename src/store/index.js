@@ -4,9 +4,9 @@ import {applyMiddleware, combineReducers} from "../redux/src";
 function counterReducer(state = {value: 0}, action) {
     switch (action.type) {
         case 'counter/incremented':
-            return {value: state.value + 1}
+            return {value: state.value + action.payload || 1}
         case 'counter/decremented':
-            return {value: state.value - 1}
+            return {value: state.value - action.payload || 1}
         default:
             return state
     }
